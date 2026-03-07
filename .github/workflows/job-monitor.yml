@@ -60,3 +60,30 @@ jobs:
           path: seen_companies.json
           key: seen-companies-${{ runner.os }}-${{ github.run_id }}
 
+  ai-job-hunter:
+    runs-on: ubuntu-latest
+    name: AI Job Hunter + CV Generator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+      - name: Restore hunted jobs cache
+        uses: actions/cache@v4
+        with:
+          path: seen_hunted_jobs.json
+          key: seen-hunted-${{ runner.os }}
+          restore-keys: seen-hunted-
+      - name: Run AI job hunter
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python job_hunter.py
+      - name: Save hunted jobs cache
+        uses: actions/cache/save@v4
+        with:
+          path: seen_hunted_jobs.json
+          key: seen-hunted-${{ runner.os }}-${{ github.run_id }}
