@@ -86,7 +86,7 @@ SOURCES = [
     },
     {
         "company": "Lassie (🇸🇪)",
-        "url":     "https://www.lassie.se/careers",
+       "url": "https://lassie.se/en/careers",
         "parser":  parse_lassie,
     },
 ]
