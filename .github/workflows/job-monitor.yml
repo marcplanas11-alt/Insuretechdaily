@@ -1,1 +1,79 @@
+name: EU Insurtech Remote Job Monitor
+
+on:
+  schedule:
+    - cron: "0 8 * * *"   # Every day at 8:00 AM UTC
+  workflow_dispatch:        # Also allows manual trigger from GitHub UI
+
+jobs:
+  check-jobs:
+    runs-on: ubuntu-latest
+    name: "ğŸ§‘â€ğŸ’¼ Remote Job Scanner"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Restore seen jobs cache
+        uses: actions/cache@v4
+        with:
+          path: seen_jobs.json
+          key: seen-jobs-${{ runner.os }}
+          restore-keys: seen-jobs-
+
+      - name: Run job scraper
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python scraper.py
+
+      - name: Save updated seen jobs cache
+        uses: actions/cache/save@v4
+        with:
+          path: seen_jobs.json
+          key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
+
+  scan-new-companies:
+    runs-on: ubuntu-latest
+    name: "ğŸš€ New Insurtech Company Scanner"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Restore seen companies cache
+        uses: actions/cache@v4
+        with:
+          path: seen_companies.json
+          key: seen-companies-${{ runner.os }}
+          restore-keys: seen-companies-
+
+      - name: Run company scanner
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python company_scanner.py
+
+      - name: Save updated seen companies cache
+        uses: actions/cache/save@v4
+        with:
+          path: seen_companies.json
+          key: seen-companies-${{ runner.os }}-${{ github.run_id }}
+
 
