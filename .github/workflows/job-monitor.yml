@@ -2,88 +2,75 @@ name: EU Insurtech Remote Job Monitor
 
 on:
   schedule:
-    - cron: "0 8 * * *"
+    - cron: '0 8 * * *'
   workflow_dispatch:
 
 jobs:
   check-jobs:
-    runs-on: ubuntu-latest
     name: Remote Job Scanner
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
+
       - name: Install dependencies
-        run: pip install requests beautifulsoup4
-      - name: Restore jobs cache
+        run: pip install requests
+
+      - name: Restore hunted jobs cache
         uses: actions/cache@v4
         with:
           path: seen_jobs.json
           key: seen-jobs-${{ runner.os }}
           restore-keys: seen-jobs-
-      - name: Run job scraper
-        env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python scraper.py
-      - name: Save jobs cache
-        uses: actions/cache/save@v4
-        with:
-          path: seen_jobs.json
-          key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
 
-  scan-new-companies:
-    runs-on: ubuntu-latest
-    name: New Insurtech Company Scanner
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: pip install requests beautifulsoup4
-      - name: Restore companies cache
-        uses: actions/cache@v4
-        with:
-          path: seen_companies.json
-          key: seen-companies-${{ runner.os }}
-          restore-keys: seen-companies-
-      - name: Run company scanner
-        env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python company_scanner.py
-      - name: Save companies cache
-        uses: actions/cache/save@v4
-        with:
-          path: seen_companies.json
-          key: seen-companies-${{ runner.os }}-${{ github.run_id }}
-
-  ai-job-hunter:
-    runs-on: ubuntu-latest
-    name: AI Job Hunter + CV Generator
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: pip install requests beautifulsoup4
-      - name: Restore hunted jobs cache
-        uses: actions/cache@v4
-        with:
-          path: seen_hunted_jobs.json
-          key: seen-hunted-${{ runner.os }}
-          restore-keys: seen-hunted-
       - name: Run AI job hunter
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python job_hunter.py
+
       - name: Save hunted jobs cache
-        uses: actions/cache/save@v4
+        uses: actions/cache@v4
         with:
-          path: seen_hunted_jobs.json
-          key: seen-hunted-${{ runner.os }}-${{ github.run_id }}
+          path: seen_jobs.json
+          key: seen-jobs-${{ runner.os }}
+
+  scan-companies:
+    name: New Insurtech Company Scanner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Restore seen companies cache
+        uses: actions/cache@v4
+        with:
+          path: seen_companies.json
+          key: seen-companies-${{ runner.os }}
+          restore-keys: seen-companies-
+
+      - name: Run company scanner
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python company_scanner.py
+
+      - name: Save seen companies cache
+        uses: actions/cache@v4
+        with:
+          path: seen_companies.json
+          key: seen-companies-${{ runner.os }}
