@@ -60,27 +60,41 @@ REMOTE_BOARDS = [
     {"name": "Remotive", "url": "https://remotive.com/api/remote-jobs?category=finance&limit=30", "type": "json_remotive"},
 ]
 
+# Companies using Ashby ATS — fetched via public JSON API (no JS needed)
+ASHBY_COMPANIES = [
+    {"name": "Alan",                "client": "alan"},
+    {"name": "Kota",                "client": "kota"},
+    {"name": "Artificial Labs",     "client": "artificial"},
+    {"name": "Cytora",              "client": "cytora"},
+    {"name": "wefox",               "client": "wefox"},
+    {"name": "Inaza",               "client": "inaza"},
+    {"name": "Lassie",              "client": "lassie"},
+    {"name": "Descartes Underwriting", "client": "descartesunderwriting"},
+]
+
+# Companies using Greenhouse ATS — public JSON API
+GREENHOUSE_COMPANIES = [
+    {"name": "Guidewire",           "client": "guidewire"},
+    {"name": "Duck Creek",          "client": "duckcreek"},
+    {"name": "Shift Technology",    "client": "shifttechnology"},
+    {"name": "Tractable",           "client": "tractable"},
+    {"name": "FINEOS",              "client": "fineos"},
+    {"name": "CoverGo",             "client": "covergo"},
+]
+
+# Companies using Lever ATS — public JSON API
+LEVER_COMPANIES = [
+    {"name": "Wakam",               "client": "wakam"},
+    {"name": "Laka",                "client": "laka"},
+]
+
+# Companies with standard HTML careers pages (fallback scrape)
 INSURTECH_COMPANIES = [
-    {"name": "Alan", "url": "https://alan.com/en/careers", "keywords": ["insurance"]},
-    {"name": "wefox", "url": "https://careers.wefox.com", "keywords": ["insurance"]},
-    {"name": "Kota", "url": "https://jobs.ashbyhq.com/kota", "keywords": ["insurance"]},
-    {"name": "Descartes Underwriting", "url": "https://careers.descartesunderwriting.com", "keywords": ["underwriting"]},
-    {"name": "Shift Technology", "url": "https://www.shift-technology.com/careers", "keywords": ["insurance"]},
-    {"name": "Cytora", "url": "https://www.cytora.com/careers", "keywords": ["insurance"]},
-    {"name": "Tractable", "url": "https://tractable.ai/careers", "keywords": ["insurance"]},
-    {"name": "FINEOS", "url": "https://careers.fineos.com", "keywords": ["insurance"]},
-    {"name": "Laka", "url": "https://laka.co/careers", "keywords": ["insurance"]},
-    {"name": "Inaza", "url": "https://www.inaza.com/careers", "keywords": ["insurance"]},
-    {"name": "Kayna", "url": "https://www.kayna.io/careers", "keywords": ["insurance"]},
+    {"name": "Novidea",     "url": "https://www.novidea.com/careers",          "keywords": ["insurance"]},
+    {"name": "EIS Group",   "url": "https://eisgroup.com/careers",             "keywords": ["insurance"]},
+    {"name": "Majesco",     "url": "https://www.majesco.com/careers",          "keywords": ["insurance"]},
+    {"name": "Kayna",       "url": "https://www.kayna.io/careers",             "keywords": ["insurance"]},
     {"name": "Blink Parametric", "url": "https://www.blinkparametric.com/careers", "keywords": ["parametric"]},
-    {"name": "CoverGo", "url": "https://covergo.com/careers", "keywords": ["insurance"]},
-    {"name": "Wakam", "url": "https://www.wakam.com/en/careers", "keywords": ["insurance"]},
-    {"name": "Artificial Labs", "url": "https://www.artificial.io/careers", "keywords": ["insurance"]},
-    {"name": "Novidea", "url": "https://www.novidea.com/careers", "keywords": ["insurance"]},
-    {"name": "EIS Group", "url": "https://eisgroup.com/careers", "keywords": ["insurance"]},
-    {"name": "Majesco", "url": "https://www.majesco.com/careers", "keywords": ["insurance"]},
-    {"name": "Guidewire", "url": "https://www.guidewire.com/careers", "keywords": ["insurance"]},
-    {"name": "Duck Creek", "url": "https://www.duckcreek.com/about/careers", "keywords": ["insurance"]},
 ]
 
 RECRUITERS = [
@@ -370,6 +384,99 @@ def scrape_remote_boards():
     print(f"  Remote boards: {len(jobs)} listings")
     return jobs
 
+def scrape_ashby():
+    """Fetch jobs from Ashby ATS public API — returns real job listings, not JS pages."""
+    jobs = []
+    for co in ASHBY_COMPANIES:
+        url = f"https://api.ashbyhq.com/posting-api/job-board/{co['client']}?includeCompensation=true"
+        r = fetch(url)
+        if not r or r.status_code != 200:
+            print(f"  Ashby {co['name']}: no response")
+            continue
+        try:
+            data = r.json()
+            listings = data.get("jobs", [])
+            for job in listings:
+                if not job.get("isListed", True):
+                    continue
+                location = job.get("location", "")
+                is_remote = job.get("isRemote", False)
+                workplace = job.get("workplaceType", "")
+                salary_info = ""
+                comp = job.get("compensation", {})
+                if comp:
+                    salary_info = comp.get("compensationTierSummary", "") or comp.get("scrapeableCompensationSalarySummary", "")
+                jobs.append({
+                    "title": job.get("title", ""),
+                    "company": co["name"],
+                    "link": job.get("jobUrl", f"https://jobs.ashbyhq.com/{co['client']}"),
+                    "description": (
+                        f"Location: {location} | Remote: {is_remote} | Type: {workplace} | "
+                        f"Salary: {salary_info} | "
+                        + job.get("descriptionPlain", "")[:400]
+                    ),
+                    "source": "Ashby API"
+                })
+            print(f"  Ashby {co['name']}: {len(listings)} job(s)")
+        except Exception as e:
+            print(f"  Ashby {co['name']} error: {e}")
+    print(f"  Ashby total: {len(jobs)} listings")
+    return jobs
+
+
+def scrape_greenhouse():
+    """Fetch jobs from Greenhouse ATS public API."""
+    jobs = []
+    for co in GREENHOUSE_COMPANIES:
+        url = f"https://api.greenhouse.io/v1/boards/{co['client']}/jobs?content=true"
+        r = fetch(url)
+        if not r or r.status_code != 200:
+            continue
+        try:
+            listings = r.json().get("jobs", [])
+            for job in listings:
+                location = job.get("location", {}).get("name", "")
+                jobs.append({
+                    "title": job.get("title", ""),
+                    "company": co["name"],
+                    "link": job.get("absolute_url", ""),
+                    "description": f"Location: {location} | " + job.get("content", "")[:400],
+                    "source": "Greenhouse API"
+                })
+            print(f"  Greenhouse {co['name']}: {len(listings)} job(s)")
+        except Exception as e:
+            print(f"  Greenhouse {co['name']} error: {e}")
+    print(f"  Greenhouse total: {len(jobs)} listings")
+    return jobs
+
+
+def scrape_lever():
+    """Fetch jobs from Lever ATS public API."""
+    jobs = []
+    for co in LEVER_COMPANIES:
+        url = f"https://api.lever.co/v0/postings/{co['client']}?mode=json"
+        r = fetch(url)
+        if not r or r.status_code != 200:
+            continue
+        try:
+            listings = r.json()
+            for job in listings:
+                categories = job.get("categories", {})
+                location = categories.get("location", categories.get("allLocations", ""))
+                jobs.append({
+                    "title": job.get("text", ""),
+                    "company": co["name"],
+                    "link": job.get("hostedUrl", ""),
+                    "description": f"Location: {location} | Team: {categories.get('team','')} | " + job.get("descriptionPlain", "")[:400],
+                    "source": "Lever API"
+                })
+            print(f"  Lever {co['name']}: {len(listings)} job(s)")
+        except Exception as e:
+            print(f"  Lever {co['name']} error: {e}")
+    print(f"  Lever total: {len(jobs)} listings")
+    return jobs
+
+
 def scrape_company_pages():
     jobs = []
     for co in INSURTECH_COMPANIES:
@@ -528,6 +635,9 @@ def main():
     print("Scanning sources...")
     all_jobs  = scrape_indeed_rss()
     all_jobs += scrape_remote_boards()
+    all_jobs += scrape_ashby()
+    all_jobs += scrape_greenhouse()
+    all_jobs += scrape_lever()
     all_jobs += scrape_company_pages()
     all_jobs += scrape_recruiters()
     print(f"Total listings: {len(all_jobs)}")
