@@ -406,13 +406,25 @@ def scrape_ashby():
                 comp = job.get("compensation", {})
                 if comp:
                     salary_info = comp.get("compensationTierSummary", "") or comp.get("scrapeableCompensationSalarySummary", "")
+                # Build explicit location signal so AI filter cannot miss it
+                if is_remote or workplace.lower() in ("remote", "fully remote"):
+                    loc_signal = "FULLY REMOTE eligible"
+                elif workplace.lower() == "hybrid" and any(
+                    city in location.lower() for city in ["barcelona", "madrid", "spain"]
+                ):
+                    loc_signal = f"HYBRID BARCELONA/SPAIN eligible Location {location}"
+                elif workplace.lower() == "hybrid":
+                    loc_signal = f"HYBRID {location} NOT Barcelona NOT Spain REJECT THIS JOB"
+                else:
+                    loc_signal = f"ON-SITE {location} REJECT unless Barcelona Spain"
+
                 jobs.append({
                     "title": job.get("title", ""),
                     "company": co["name"],
                     "link": job.get("jobUrl", f"https://jobs.ashbyhq.com/{co['client']}"),
                     "description": (
-                        f"Location: {location} | Remote: {is_remote} | Type: {workplace} | "
-                        f"Salary: {salary_info} | "
+                        f"LOCATION FILTER: {loc_signal} | "
+                        f"Workplace: {workplace} | Salary: {salary_info} | "
                         + job.get("descriptionPlain", "")[:400]
                     ),
                     "source": "Ashby API"
@@ -568,9 +580,11 @@ def send_email(matched_jobs):
     if not matched_jobs:
         return
     msg = MIMEMultipart("mixed")
-    msg["Subject"] = f"🎯 {len(matched_jobs)} New Insurtech Job Match(es) — {TODAY}"
-    msg["From"] = GMAIL_USER
+    msg["Subject"] = f"Job Matches {TODAY} - {len(matched_jobs)} new insurtech role(s)"
+    msg["From"] = f"Insurtech Job Hunter <{GMAIL_USER}>"
     msg["To"] = GMAIL_USER
+    msg["Reply-To"] = GMAIL_USER
+    msg["X-Mailer"] = "Python/smtplib"
 
     html = [f"""<html><body style="font-family:Arial,sans-serif;">
 <h2 style="color:#1a1a2e;">🎯 {len(matched_jobs)} Job Match(es) — {TODAY}</h2>
@@ -614,7 +628,17 @@ def send_email(matched_jobs):
                 pdf_count += 1
 
     html.append("</body></html>")
-    msg.attach(MIMEText("".join(html), "html"))
+    # Plain text version (helps avoid spam filters)
+    plain_lines = [f"Job Matches - {TODAY}", f"{len(matched_jobs)} new insurtech role(s) scoring 80%+", ""]
+    for i, job in enumerate(matched_jobs, 1):
+        ai = job.get("ai_result", {})
+        plain_lines.append(f"#{i} {job['title']} at {job['company']}")
+        plain_lines.append(f"Score: {ai.get('score','?')}% | {job['link']}")
+        plain_lines.append("")
+    alt = MIMEMultipart("alternative")
+    alt.attach(MIMEText("\n".join(plain_lines), "plain"))
+    alt.attach(MIMEText("".join(html), "html"))
+    msg.attach(alt)
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
