@@ -176,7 +176,10 @@ def load_seen():
         return set()
 
 def save_seen(seen):
-    json.dump(list(seen), open(SEEN_FILE, "w"))
+    try:
+        json.dump(list(seen), open(SEEN_FILE, "w"))
+    except Exception as e:
+        print(f"    save_seen error: {e}")
 
 def has_keywords(text, keywords):
     t = text.lower()

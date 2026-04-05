@@ -149,7 +149,10 @@ def load_seen():
         return set()
 
 def save_seen(seen):
-    json.dump(list(seen), open(SEEN_FILE, "w"))
+    try:
+        json.dump(list(seen), open(SEEN_FILE, "w"))
+    except Exception as e:
+        print(f"    save_seen error: {e}")
 
 def is_insurance_relevant(text):
     """Check if job text contains insurance/insurtech keywords."""
@@ -174,18 +177,21 @@ def is_eu_eligible(location_text, description_text=""):
     return False, "not_eu"
 
 def log_to_tracker(job, ai_result):
-    exists = os.path.exists(TRACKER_FILE)
-    with open(TRACKER_FILE, "a", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        if not exists:
-            w.writerow(["Date", "Title", "Company", "Source", "Score",
-                        "Location", "Salary", "Reason", "Link", "Status"])
-        w.writerow([
-            TODAY, job.get("title", ""), job.get("company", ""),
-            job.get("source", ""), ai_result.get("score", ""),
-            ai_result.get("location_type", ""), ai_result.get("salary_info", ""),
-            ai_result.get("reason", ""), job.get("link", ""), "New"
-        ])
+    try:
+        exists = os.path.exists(TRACKER_FILE)
+        with open(TRACKER_FILE, "a", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            if not exists:
+                w.writerow(["Date", "Title", "Company", "Source", "Score",
+                            "Location", "Salary", "Reason", "Link", "Status"])
+            w.writerow([
+                TODAY, job.get("title", ""), job.get("company", ""),
+                job.get("source", ""), ai_result.get("score", ""),
+                ai_result.get("location_type", ""), ai_result.get("salary_info", ""),
+                ai_result.get("reason", ""), job.get("link", ""), "New"
+            ])
+    except Exception as e:
+        print(f"    log_to_tracker error: {e}")
 
 # ═════════════════════════════════════════════════════════════
 # SCRAPERS — Only working, tested APIs
