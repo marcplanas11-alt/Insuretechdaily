@@ -503,7 +503,8 @@ Cover: what they do (insurance/insurtech focus), size/funding, culture & remote 
 
 
 # ═════════════════════════════════════════════════════════════
-# PDF GENERATION — Using real CV data
+# PDF GENERATION — career-ops Playwright renderer (primary)
+#                  ReportLab (fallback)
 # ═════════════════════════════════════════════════════════════
 
 NAVY   = HexColor("#1a2744") if REPORTLAB else None
@@ -511,7 +512,52 @@ ACCENT = HexColor("#2563eb") if REPORTLAB else None
 DARK   = HexColor("#1f2937") if REPORTLAB else None
 GRAY   = HexColor("#6b7280") if REPORTLAB else None
 
+_CAREER_OPS_SCRIPT = os.path.join(os.path.dirname(__file__), "career-ops", "generate-pdf.mjs")
+
+
+def _build_pdf_via_playwright(job, ai_result, lang, doc_type):
+    """Call career-ops/generate-pdf.mjs --stdin-json and return PDF bytes.
+
+    Returns None if career-ops is not available or the subprocess fails.
+    """
+    import subprocess, json as _json
+    if not os.path.exists(_CAREER_OPS_SCRIPT):
+        return None
+    summary_key = f"cv_summary_{lang}"
+    payload = {
+        "type":          doc_type,
+        "lang":          lang,
+        "job": {
+            "title":    job.get("title", ""),
+            "company":  job.get("company", ""),
+            "location": job.get("location", ""),
+            "link":     job.get("link", ""),
+        },
+        "ai_summary":    ai_result.get(summary_key) or ai_result.get("cv_summary_en", ""),
+        "cover_opening": ai_result.get(f"cover_letter_{lang}", ""),
+    }
+    try:
+        result = subprocess.run(
+            ["node", _CAREER_OPS_SCRIPT, "--stdin-json", "--format=a4"],
+            input=_json.dumps(payload).encode(),
+            capture_output=True,
+            timeout=60,
+        )
+        if result.returncode == 0 and result.stdout:
+            return bytes(result.stdout)
+        if result.stderr:
+            print(f"    Playwright PDF warn: {result.stderr.decode()[:120]}")
+    except Exception as e:
+        print(f"    Playwright PDF error: {e}")
+    return None
+
+
 def build_pdf_cv(job, ai_result, lang="en"):
+    # Try career-ops Playwright renderer first
+    pdf = _build_pdf_via_playwright(job, ai_result, lang, doc_type="cv")
+    if pdf:
+        return pdf
+
     if not REPORTLAB:
         return None
     buf = BytesIO()
@@ -603,6 +649,11 @@ def build_pdf_cv(job, ai_result, lang="en"):
 
 
 def build_pdf_cover_letter(job, ai_result, lang="en"):
+    # Try career-ops Playwright renderer first
+    pdf = _build_pdf_via_playwright(job, ai_result, lang, doc_type="cover_letter")
+    if pdf:
+        return pdf
+
     if not REPORTLAB:
         return None
     buf = BytesIO()
