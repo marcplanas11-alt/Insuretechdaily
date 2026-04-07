@@ -1,0 +1,12 @@
+{
+  "name": "insuretechdaily",
+  "private": true,
+  "description": "AI-powered insurance job hunting pipeline",
+  "scripts": {
+    "pdf":      "node career-ops/generate-pdf.mjs",
+    "verify":   "node career-ops/verify-pipeline.mjs",
+    "dedup":    "node career-ops/dedup-tracker.mjs",
+    "merge":    "node career-ops/merge-tracker.mjs",
+    "normalize":"node career-ops/normalize-statuses.mjs"
+  }
+}

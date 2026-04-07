@@ -17,3 +17,13 @@ job_tracker.csv
 # Environment
 .env
 *.env
+
+# career-ops — generated/runtime directories
+career-ops/node_modules/
+career-ops/.cache/
+career-ops/output/
+career-ops/data/output/
+career-ops/data/jds/
+career-ops/jds/
+career-ops/reports/
+career-ops/batch/tracker-additions/
