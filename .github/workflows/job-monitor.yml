@@ -2,9 +2,7 @@ name: EU Insurance Remote Job Monitor v2
 
 on:
   schedule:
-    # Daily job scan at 8am UTC (Mon-Fri)
     - cron: '0 8 * * 1-5'
-    # Weekly digest on Monday at 9am UTC
     - cron: '0 9 * * 1'
   workflow_dispatch:
     inputs:
@@ -31,65 +29,54 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
+      - name: Ensure cache files exist
+        run: |
+          [ -f seen_jobs.json ] || echo "[]" > seen_jobs.json
+          [ -f job_tracker.csv ] || echo "date,job_id,source" > job_tracker.csv
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: career-ops/package-lock.json
-
       - name: Install Python dependencies
         run: pip install requests reportlab
-
       - name: Install career-ops Node dependencies
         run: npm install --prefix career-ops
-
       - name: Install Playwright Chromium
         run: npx --prefix career-ops playwright install chromium --with-deps
-
-      # Fixed caching: use date-based keys so each day's cache persists
-      # and falls back to the most recent previous day
       - name: Restore seen jobs cache
         uses: actions/cache/restore@v4
         with:
           path: seen_jobs.json
-          key: seen-jobs-${{ hashFiles('seen_jobs.json') }}
-          restore-keys: seen-jobs-
-
+          key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: seen-jobs-${{ runner.os }}-
       - name: Restore job tracker cache
         uses: actions/cache/restore@v4
         with:
           path: job_tracker.csv
-          key: tracker-${{ hashFiles('job_tracker.csv') }}
-          restore-keys: tracker-
-
+          key: tracker-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: tracker-${{ runner.os }}-
       - name: Run job hunter
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python job_hunter.py
-
-      # Save caches with content hash — guarantees uniqueness
       - name: Save seen jobs cache
         uses: actions/cache/save@v4
         if: always()
         with:
           path: seen_jobs.json
-          key: seen-jobs-${{ hashFiles('seen_jobs.json') }}
-
+          key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
       - name: Save job tracker cache
         uses: actions/cache/save@v4
         if: always()
         with:
           path: job_tracker.csv
-          key: tracker-${{ hashFiles('job_tracker.csv') }}
+          key: tracker-${{ runner.os }}-${{ github.run_id }}
 
   scan-companies:
     name: 🚀 Insurtech News Scanner
@@ -100,34 +87,32 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
+      - name: Ensure cache files exist
+        run: |
+          [ -f seen_companies.json ] || echo "[]" > seen_companies.json
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: pip install requests
-
       - name: Restore seen companies cache
         uses: actions/cache/restore@v4
         with:
           path: seen_companies.json
-          key: companies-${{ hashFiles('seen_companies.json') }}
-          restore-keys: companies-
-
+          key: companies-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: companies-${{ runner.os }}-
       - name: Run company scanner
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python company_scanner.py
-
       - name: Save seen companies cache
         uses: actions/cache/save@v4
         if: always()
         with:
           path: seen_companies.json
-          key: companies-${{ hashFiles('seen_companies.json') }}
+          key: companies-${{ runner.os }}-${{ github.run_id }}
 
   scan-coverholders:
     name: 🏛️ Lloyd's Coverholder EU Scanner
@@ -138,34 +123,32 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
+      - name: Ensure cache files exist
+        run: |
+          [ -f seen_coverholders.json ] || echo "[]" > seen_coverholders.json
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: pip install requests
-
       - name: Restore seen coverholders cache
         uses: actions/cache/restore@v4
         with:
           path: seen_coverholders.json
-          key: coverholders-${{ hashFiles('seen_coverholders.json') }}
-          restore-keys: coverholders-
-
+          key: coverholders-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: coverholders-${{ runner.os }}-
       - name: Run coverholder scanner
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python coverholder_scanner.py
-
       - name: Save seen coverholders cache
         uses: actions/cache/save@v4
         if: always()
         with:
           path: seen_coverholders.json
-          key: coverholders-${{ hashFiles('seen_coverholders.json') }}
+          key: coverholders-${{ runner.os }}-${{ github.run_id }}
 
   weekly-digest:
     name: 📊 Weekly Digest
@@ -176,22 +159,21 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
+      - name: Ensure cache files exist
+        run: |
+          [ -f job_tracker.csv ] || echo "date,job_id,source" > job_tracker.csv
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: pip install requests
-
       - name: Restore job tracker cache
         uses: actions/cache/restore@v4
         with:
           path: job_tracker.csv
-          key: tracker-${{ hashFiles('job_tracker.csv') }}
-          restore-keys: tracker-
-
+          key: tracker-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: tracker-${{ runner.os }}-
       - name: Send weekly digest
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
