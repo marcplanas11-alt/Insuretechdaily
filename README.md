@@ -60,3 +60,22 @@ Uses `actions/cache/save` and `actions/cache/restore` with content-hash keys. Th
 - Cache persists across runs (no `run_id` in key)
 - New cache only saved when content actually changes
 - Graceful fallback to most recent cache via `restore-keys` prefix
+
+## Humanizer Skill
+
+The humanizer skill is installed as a Claude Code skill at `~/.claude/skills/humanizer/`. It removes AI-generated writing patterns and makes text sound more natural and human-like.
+
+**Usage:**
+```
+/humanizer
+
+[paste your text here]
+```
+
+**Useful for:**
+- Naturalizing generated cover letters
+- Making evaluation reports sound less robotic
+- Polishing outreach emails to recruiters
+- Humanizing CV copy and interview talking points
+
+See [HUMANIZER_SETUP.md](./HUMANIZER_SETUP.md) for full details on setup and usage.
