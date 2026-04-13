@@ -224,7 +224,7 @@ PROFILE = {
         "claims adjuster", "field adjuster",
     ],
 
-    "min_match_score": 75,
+    "min_match_score": 50,
 
     # ── CV Summaries for AI generation ───────────────────────────
     "cv_summary_en": (
