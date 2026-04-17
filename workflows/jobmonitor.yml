@@ -1,1 +1,184 @@
+name: EU Insurance Remote Job Monitor v2
 
+on:
+  schedule:
+    - cron: '0 8 * * 1-5'
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      job_type:
+        description: 'Which job to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - check-jobs
+          - scan-companies
+          - scan-coverholders
+          - weekly-digest
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+
+  check-jobs:
+    name: 🎯 Daily Job Scanner
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'check-jobs')
+      || (github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1-5')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Ensure cache files exist
+        run: |
+          [ -f seen_jobs.json ] || echo "[]" > seen_jobs.json
+          [ -f job_tracker.csv ] || echo "date,job_id,source" > job_tracker.csv
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Python dependencies
+        run: pip install requests reportlab
+      - name: Install career-ops Node dependencies
+        run: npm install --prefix career-ops
+      - name: Install Playwright Chromium
+        run: npx --prefix career-ops playwright install chromium --with-deps
+      - name: Restore seen jobs cache
+        uses: actions/cache/restore@v4
+        with:
+          path: seen_jobs.json
+          key: seen-jobs-${{ runner.os }}
+          restore-keys: seen-jobs-${{ runner.os }}-
+      - name: Restore job tracker cache
+        uses: actions/cache/restore@v4
+        with:
+          path: job_tracker.csv
+          key: tracker-${{ runner.os }}
+          restore-keys: tracker-${{ runner.os }}-
+      - name: Run job hunter
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python job_hunter.py
+      - name: Save seen jobs cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: seen_jobs.json
+          key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
+      - name: Save job tracker cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: job_tracker.csv
+          key: tracker-${{ runner.os }}-${{ github.run_id }}
+
+  scan-companies:
+    name: 🚀 Insurtech News Scanner
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'scan-companies')
+      || (github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1-5')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Ensure cache files exist
+        run: |
+          [ -f seen_companies.json ] || echo "[]" > seen_companies.json
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Restore seen companies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: seen_companies.json
+          key: companies-${{ runner.os }}
+          restore-keys: companies-${{ runner.os }}-
+      - name: Run company scanner
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python company_scanner.py
+      - name: Save seen companies cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: seen_companies.json
+          key: companies-${{ runner.os }}-${{ github.run_id }}
+
+  scan-coverholders:
+    name: 🏛️ Lloyd's Coverholder EU Scanner
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'scan-coverholders')
+      || (github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1-5')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Ensure cache files exist
+        run: |
+          [ -f seen_coverholders.json ] || echo "[]" > seen_coverholders.json
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Restore seen coverholders cache
+        uses: actions/cache/restore@v4
+        with:
+          path: seen_coverholders.json
+          key: coverholders-${{ runner.os }}
+          restore-keys: coverholders-${{ runner.os }}-
+      - name: Run coverholder scanner
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python coverholder_scanner.py
+      - name: Save seen coverholders cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: seen_coverholders.json
+          key: coverholders-${{ runner.os }}-${{ github.run_id }}
+
+  weekly-digest:
+    name: 📊 Weekly Digest
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'weekly-digest')
+      || (github.event_name == 'schedule' && github.event.schedule == '0 9 * * 1')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Ensure cache files exist
+        run: |
+          [ -f job_tracker.csv ] || echo "date,job_id,source" > job_tracker.csv
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Restore job tracker cache
+        uses: actions/cache/restore@v4
+        with:
+          path: job_tracker.csv
+          key: tracker-${{ runner.os }}
+          restore-keys: tracker-${{ runner.os }}-
+      - name: Send weekly digest
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python weekly_digest.py
