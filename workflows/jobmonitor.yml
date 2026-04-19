@@ -2,8 +2,8 @@ name: EU Insurance Remote Job Monitor v2
 
 on:
   schedule:
-    - cron: '0 8 * * 1-5'
-    - cron: '0 9 * * 1'
+    - cron: '0 7 * * *'        # 8 AM CET daily ← CHANGED: daily, not weekdays only
+    - cron: '0 8 * * 1'        # 9 AM CET Monday digest
   workflow_dispatch:
     inputs:
       job_type:
@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'check-jobs')
-      || (github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1-5')
+      || github.event_name == 'schedule'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -55,13 +55,11 @@ jobs:
         with:
           path: seen_jobs.json
           key: seen-jobs-${{ runner.os }}
-          restore-keys: seen-jobs-${{ runner.os }}-
       - name: Restore job tracker cache
         uses: actions/cache/restore@v4
         with:
           path: job_tracker.csv
           key: tracker-${{ runner.os }}
-          restore-keys: tracker-${{ runner.os }}-
       - name: Run job hunter
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -73,20 +71,20 @@ jobs:
         if: always()
         with:
           path: seen_jobs.json
-          key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
+          key: seen-jobs-${{ runner.os }}
       - name: Save job tracker cache
         uses: actions/cache/save@v4
         if: always()
         with:
           path: job_tracker.csv
-          key: tracker-${{ runner.os }}-${{ github.run_id }}
+          key: tracker-${{ runner.os }}
 
   scan-companies:
     name: 🚀 Insurtech News Scanner
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'scan-companies')
-      || (github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1-5')
+      || github.event_name == 'schedule'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -104,7 +102,6 @@ jobs:
         with:
           path: seen_companies.json
           key: companies-${{ runner.os }}
-          restore-keys: companies-${{ runner.os }}-
       - name: Run company scanner
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -115,14 +112,14 @@ jobs:
         if: always()
         with:
           path: seen_companies.json
-          key: companies-${{ runner.os }}-${{ github.run_id }}
+          key: companies-${{ runner.os }}
 
   scan-coverholders:
     name: 🏛️ Lloyd's Coverholder EU Scanner
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'scan-coverholders')
-      || (github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1-5')
+      || github.event_name == 'schedule'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -140,7 +137,6 @@ jobs:
         with:
           path: seen_coverholders.json
           key: coverholders-${{ runner.os }}
-          restore-keys: coverholders-${{ runner.os }}-
       - name: Run coverholder scanner
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -151,14 +147,14 @@ jobs:
         if: always()
         with:
           path: seen_coverholders.json
-          key: coverholders-${{ runner.os }}-${{ github.run_id }}
+          key: coverholders-${{ runner.os }}
 
   weekly-digest:
     name: 📊 Weekly Digest
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'weekly-digest')
-      || (github.event_name == 'schedule' && github.event.schedule == '0 9 * * 1')
+      || (github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1')
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -176,7 +172,6 @@ jobs:
         with:
           path: job_tracker.csv
           key: tracker-${{ runner.os }}
-          restore-keys: tracker-${{ runner.os }}-
       - name: Send weekly digest
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
