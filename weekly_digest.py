@@ -4,6 +4,7 @@ Reads job_tracker.csv and sends a summary email every Monday.
 """
 
 import os
+import sys
 import csv
 import smtplib
 from datetime import datetime, timedelta
@@ -128,6 +129,7 @@ def send_digest(all_rows):
         print(f"✅ Weekly digest sent: {total_week} matches this week")
     except Exception as e:
         print(f"❌ Email error: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

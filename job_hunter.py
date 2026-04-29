@@ -5,6 +5,7 @@ generates tailored PDF CVs + cover letters, researches companies, logs to tracke
 """
 
 import os
+import sys
 import json
 import csv
 import hashlib
@@ -144,13 +145,15 @@ def job_id(title, company):
 
 def load_seen():
     try:
-        return set(json.load(open(SEEN_FILE)))
+        with open(SEEN_FILE) as f:
+            return set(json.load(f))
     except Exception:
         return set()
 
 def save_seen(seen):
     try:
-        json.dump(list(seen), open(SEEN_FILE, "w"))
+        with open(SEEN_FILE, "w") as f:
+            json.dump(list(seen), f)
     except Exception as e:
         print(f"    save_seen error: {e}")
 
@@ -807,6 +810,7 @@ def send_email(matched_jobs):
         print(f"✅ Email sent: {len(matched_jobs)} match(es), {pdf_count} PDFs")
     except Exception as e:
         print(f"❌ Email error: {e}")
+        sys.exit(1)
 
 
 # ═════════════════════════════════════════════════════════════

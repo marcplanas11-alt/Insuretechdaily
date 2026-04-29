@@ -5,6 +5,7 @@ and EU expansion signals. Only uses RSS (no HTML scraping of JS sites).
 """
 
 import os
+import sys
 import json
 import smtplib
 import requests
@@ -66,14 +67,16 @@ def has_eu_signal(text):
 
 def load_seen():
     try:
-        return set(json.load(open(SEEN_FILE)))
+        with open(SEEN_FILE) as f:
+            return set(json.load(f))
     except Exception:
         return set()
 
 
 def save_seen(seen):
     try:
-        json.dump(list(seen), open(SEEN_FILE, "w"))
+        with open(SEEN_FILE, "w") as f:
+            json.dump(list(seen), f)
     except Exception as e:
         print(f"  save_seen error: {e}")
 
@@ -188,6 +191,7 @@ def send_email(new_articles):
         print(f"✅ Email sent: {len(new_articles)} article(s)")
     except Exception as e:
         print(f"❌ Email error: {e}")
+        sys.exit(1)
 
 
 def main():

@@ -65,13 +65,20 @@ jobs:
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
             echo "❌ GMAIL_USER or GMAIL_APP_PASSWORD secret is not configured."
             echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
             exit 1
           fi
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "❌ ANTHROPIC_API_KEY secret is not configured."
+            echo "Without it all jobs score 0 and no email will be sent."
+            exit 1
+          fi
           echo "✅ Email credentials present for: $GMAIL_USER"
+          echo "✅ ANTHROPIC_API_KEY present"
       - name: Run job hunter
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
