@@ -112,7 +112,21 @@ CAREER_PAGES = [
     {"name": "Coalition",          "url": "https://www.coalitioninc.com/careers"},
     {"name": "Counterpart",        "url": "https://www.counterpart.com/careers"},
 ]
-
+# Add to CAREER_PAGES — consultancies and EU insurance-consulting firms
+CAREER_PAGES += [
+    {"name": "zeb", "url": "https://zeb-career.com/"},
+    {"name": "Milliman (EMEA)", "url": "https://www.milliman.com/careers"},
+    {"name": "Aon", "url": "https://www.aon.com/careers"},
+    {"name": "Mazars", "url": "https://www.mazars.com/careers"},
+    {"name": "Oliver Wyman", "url": "https://www.oliverwyman.com/careers"},
+    {"name": "EY (Insurance Transformation)", "url": "https://www.ey.com/en_gl/careers"},
+    {"name": "Roland Berger", "url": "https://www.rolandberger.com/en/Careers"},
+    {"name": "Capgemini Invent", "url": "https://www.capgemini.com/careers"},
+    {"name": "WTW", "url": "https://careers.wtwco.com/"},
+    {"name": "KPMG (Insurance Advisory)", "url": "https://home.kpmg/careers"},
+    {"name": "FTI Consulting (EMEA)", "url": "https://www.fticonsulting.com/careers"},
+    {"name": "Synpulse", "url": "https://www.synpulse.com/careers/"},
+]
 # Remotive API — working JSON API for remote jobs
 REMOTIVE_CATEGORIES = [
     "finance",
