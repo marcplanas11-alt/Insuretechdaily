@@ -49,6 +49,14 @@ PROFILE = {
         "BPO Manager",
         "Process Excellence Manager",
         "Data Operations Manager",
+        # Business Analysis (InsurTech/FinTech/AI context)
+        "Business Analyst",
+        "Business Analyst (InsurTech)",
+        "Business Analyst (FinTech)",
+        "AI Business Analyst",
+        "Digital Transformation Business Analyst",
+        "Process Analyst",
+        "Operational Business Analyst",
         # New: AI & Digital Workforce (Expanded Scope)
         "AI Product Engineer",
         "AI Implementation Specialist",
@@ -247,6 +255,9 @@ PROFILE = {
         "Solvency II", "sanctions", "OFAC", "compliance",
         "operations manager", "operations specialist", "operations analyst",
         "insurtech", "insurance platform",
+        # Business Analysis
+        "business analyst", "business analysis", "process analyst",
+        "digital transformation", "operational analyst",
         # New: AI & automation focus
         "AI product engineer", "AI implementation", "digital workforce",
         "AI automation", "workflow automation", "process automation",
