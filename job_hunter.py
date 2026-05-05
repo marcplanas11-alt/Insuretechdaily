@@ -61,6 +61,7 @@ EU_REMOTE_KEYWORDS = [
 
 # Ashby ATS companies
 ASHBY_COMPANIES = [
+    # Traditional InsurTech (domain-focused)
     {"name": "Descartes Underwriting", "client": "descartesunderwriting"},
     {"name": "Cytora",                 "client": "cytora"},
     {"name": "Artificial Labs",        "client": "artificial"},
@@ -72,6 +73,19 @@ ASHBY_COMPANIES = [
     {"name": "Zego",                   "client": "zego"},
     {"name": "Lassie",                 "client": "lassie"},
     {"name": "YuLife",                 "client": "yulife"},
+    # AI-focused InsurTech and automation platforms
+    {"name": "Embat",                  "client": "embat"},
+    {"name": "Tractable",              "client": "tractable"},
+    {"name": "Shift Technology",       "client": "shifttechnology"},
+    # Additional EU InsurTech/FinTech (Ashby)
+    {"name": "Hiscox",                 "client": "hiscox"},
+    {"name": "Bought By Many",         "client": "boughtbymany"},
+    {"name": "Cuvva",                  "client": "cuvva"},
+    {"name": "Nimbla",                 "client": "nimbla"},
+    {"name": "Optalitix",              "client": "optalitix"},
+    {"name": "Drivit",                 "client": "drivit"},
+    {"name": "Qover",                  "client": "qover"},
+    {"name": "InMyBag",                "client": "inmybag"},
 ]
 
 # Greenhouse ATS companies
@@ -84,15 +98,26 @@ GREENHOUSE_COMPANIES = [
     {"name": "CoverGo",            "client": "covergo"},
     {"name": "Hokodo",             "client": "hokodo"},
     {"name": "Concirrus",          "client": "concirrus"},
+    # Additional EU InsurTech/FinTech (Greenhouse)
+    {"name": "Coalition",          "client": "coalitioninc"},
+    {"name": "Branch Insurance",   "client": "branchinsurance"},
+    {"name": "Hippo Insurance",    "client": "hippoinsurance"},
+    {"name": "Openly",             "client": "openly"},
+    {"name": "Kin Insurance",      "client": "kininsurance"},
 ]
 
 # Lever ATS companies
 LEVER_COMPANIES = [
-    {"name": "Wakam",      "client": "wakam"},
-    {"name": "Prima",      "client": "prima"},
-    {"name": "Superscript", "client": "superscript"},
-    {"name": "Laka",       "client": "laka"},
-    {"name": "Flock",      "client": "flock"},
+    {"name": "Wakam",        "client": "wakam"},
+    {"name": "Prima",        "client": "prima"},
+    {"name": "Superscript",  "client": "superscript"},
+    {"name": "Laka",         "client": "laka"},
+    {"name": "Flock",        "client": "flock"},
+    # Additional EU InsurTech/FinTech (Lever)
+    {"name": "Pie Insurance", "client": "pieinsurance"},
+    {"name": "At-Bay",        "client": "atbay"},
+    {"name": "Embroker",      "client": "embroker"},
+    {"name": "Corvus Insurance", "client": "corvusinsurance"},
 ]
 
 # Direct career page checks (companies without standard ATS APIs)
@@ -126,12 +151,18 @@ CAREER_PAGES += [
     {"name": "KPMG (Insurance Advisory)", "url": "https://home.kpmg/careers"},
     {"name": "FTI Consulting (EMEA)", "url": "https://www.fticonsulting.com/careers"},
     {"name": "Synpulse", "url": "https://www.synpulse.com/careers/"},
+    # New: AI/Automation InsurTech platforms and solutions
+    {"name": "Embat", "url": "https://www.embat.com/careers"},
+    {"name": "Tractable (AI Claims)", "url": "https://www.tractable.ai/careers"},
+    {"name": "Shift Technology", "url": "https://www.shift-technology.com/careers"},
+    {"name": "Concirrus (InsurTech AI)", "url": "https://www.concirrus.com/careers"},
 ]
 # Remotive API — working JSON API for remote jobs
 REMOTIVE_CATEGORIES = [
     "finance",
     "business",
     "all-others",
+    "software-dev",  # For AI/automation engineer roles in finance/insurance
 ]
 
 # RSS feeds that actually work
@@ -139,6 +170,25 @@ WORKING_RSS = [
     {"name": "Remotive Finance",     "url": "https://remotive.com/remote-jobs/finance/feed"},
     {"name": "Remotive Business",    "url": "https://remotive.com/remote-jobs/business/feed"},
     {"name": "We Work Remotely",     "url": "https://weworkremotely.com/categories/remote-finance-legal-jobs.rss"},
+    {"name": "Jobicy Finance",       "url": "https://jobicy.com/?feed=job_feed&job_category=finance&job_region=europe"},
+    {"name": "Jobicy Operations",    "url": "https://jobicy.com/?feed=job_feed&job_category=business&job_region=europe"},
+]
+
+# Adzuna API — covers EU countries, keyword-based search, free public API
+# Requires app_id + app_key (free at developer.adzuna.com — add as GitHub secrets)
+ADZUNA_APP_ID  = os.environ.get("ADZUNA_APP_ID", "")
+ADZUNA_APP_KEY = os.environ.get("ADZUNA_APP_KEY", "")
+
+ADZUNA_SEARCHES = [
+    {"country": "gb", "keywords": "insurance operations manager remote"},
+    {"country": "gb", "keywords": "underwriting operations remote"},
+    {"country": "gb", "keywords": "insurtech operations remote"},
+    {"country": "gb", "keywords": "business analyst insurtech remote"},
+    {"country": "gb", "keywords": "AI product engineer insurance remote"},
+    {"country": "de", "keywords": "insurance operations remote"},
+    {"country": "fr", "keywords": "insurance operations remote"},
+    {"country": "es", "keywords": "insurance operations remote"},
+    {"country": "nl", "keywords": "insurance operations remote"},
 ]
 
 # ═════════════════════════════════════════════════════════════
@@ -169,12 +219,43 @@ def save_seen(seen):
         print(f"    save_seen error: {e}")
 
 def is_insurance_relevant(text):
-    """Check if job text contains insurance/insurtech keywords."""
+    """Check if job contains insurance/fintech domain OR AI + finance/insurance domain."""
     t = text.lower()
-    strong = ["insurance", "insurtech", "reinsurance", "underwriting", "mga ",
-              "managing general", "coverholder", "lloyd's", "actuar", "claims",
-              "broker", "solvency", "dua", "delegated underwriting"]
-    return any(kw in t for kw in strong)
+
+    # Traditional insurance/fintech keywords
+    strong_insurance = ["insurance", "insurtech", "reinsurance", "underwriting", "mga ",
+                       "managing general", "coverholder", "lloyd's", "actuar", "claims",
+                       "broker", "solvency", "dua", "delegated underwriting",
+                       "fintech", "financial services", "insuretechdaily"]
+
+    # Business analysis at insurance/fintech
+    ba_insurance = ["business analyst", "process analyst", "operational analyst",
+                    "digital transformation", "business analysis"]
+
+    # AI/automation keywords (tool-specific)
+    ai_automation = ["claude api", "langchain", "langgraph", "crewai",
+                     "prompt engineer", "llm", "generative ai",
+                     "ai agent", "ai implementation", "ai automation", "rag", "mcp",
+                     "ai-powered", "ai-enabled"]
+
+    # Domain context for AI roles (STRICT: insurance/finance specific)
+    finance_insurance_domain = [
+        "claims automation", "underwriting automation", "claims processing",
+        "insurance automation", "operations ai", "fintech",
+        "treasury operations", "finance operations", "financial automation",
+        "insurance operations", "reinsurance", "policy management", "bordereaux",
+        "financial services"
+    ]
+
+    has_insurance = any(kw in t for kw in strong_insurance)
+    has_ba = any(kw in t for kw in ba_insurance)
+    has_ai = any(kw in t for kw in ai_automation)
+    has_finance_insurance = any(kw in t for kw in finance_insurance_domain)
+
+    # Accept: traditional insurance/fintech (includes BA at those companies)
+    # OR: BA keyword + insurance/fintech domain
+    # OR: AI tools + finance/insurance domain
+    return has_insurance or (has_ba and has_finance_insurance) or (has_ai and has_finance_insurance)
 
 def is_eu_eligible(location_text, description_text=""):
     """Check if role is remote EU or Barcelona-based."""
@@ -381,19 +462,23 @@ def scrape_rss():
 
 
 def scrape_career_pages():
-    """Check career pages for insurance operations keywords. Lightweight check."""
+    """Check career pages for operations OR AI/automation keywords. Lightweight check."""
     jobs = []
     ops_keywords = ["operations", "ops manager", "underwriting ops", "process",
                     "bpo", "programme manager", "program manager"]
+    ai_keywords = ["ai", "automation", "claude", "llm", "langchain", "agent",
+                   "machine learning", "workflow", "automation engineer", "ai engineer"]
     for co in CAREER_PAGES:
         r = fetch(co["url"])
         if not r:
             continue
         text = r.text.lower()
-        found = [kw for kw in ops_keywords if kw in text]
+        found_ops = [kw for kw in ops_keywords if kw in text]
+        found_ai = [kw for kw in ai_keywords if kw in text]
+        found = found_ops + found_ai
         if found and ("remote" in text or "barcelona" in text or "spain" in text or "europe" in text):
             jobs.append({
-                "title": f"Operations roles detected at {co['name']}",
+                "title": f"Operations/AI roles detected at {co['name']}",
                 "company": co["name"],
                 "link": co["url"],
                 "description": f"Keywords found: {', '.join(found)}. Check career page for specific roles.",
@@ -402,7 +487,69 @@ def scrape_career_pages():
                 "salary": "",
                 "source": "Career Page",
             })
-    print(f"  Career pages: {len(jobs)} with ops keywords")
+    print(f"  Career pages: {len(jobs)} with ops/AI keywords")
+    return jobs
+
+
+def scrape_adzuna():
+    """Adzuna API — broad EU job search by keyword. Requires free API key at developer.adzuna.com."""
+    if not ADZUNA_APP_ID or not ADZUNA_APP_KEY:
+        print("  Adzuna: skipped (ADZUNA_APP_ID / ADZUNA_APP_KEY not set — add as GitHub secrets)")
+        return []
+
+    jobs = []
+    seen_titles = set()
+
+    for search in ADZUNA_SEARCHES:
+        country = search["country"]
+        keywords = search["keywords"]
+        url = (
+            f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
+            f"?app_id={ADZUNA_APP_ID}&app_key={ADZUNA_APP_KEY}"
+            f"&results_per_page=20&what={requests.utils.quote(keywords)}&content-type=application/json"
+        )
+        r = fetch(url)
+        if not r:
+            continue
+        try:
+            for job in r.json().get("results", []):
+                title = job.get("title", "")
+                company = job.get("company", {}).get("display_name", "")
+                loc = job.get("location", {}).get("display_name", "")
+                desc = job.get("description", "")[:600]
+                link = job.get("redirect_url", "")
+
+                dedup_key = f"{title}|{company}".lower()
+                if dedup_key in seen_titles:
+                    continue
+                seen_titles.add(dedup_key)
+
+                eligible, loc_type = is_eu_eligible(loc, desc)
+                if not eligible:
+                    continue
+                if not is_insurance_relevant(f"{title} {company} {desc}"):
+                    continue
+
+                salary = ""
+                sal_min = job.get("salary_min")
+                sal_max = job.get("salary_max")
+                if sal_min or sal_max:
+                    salary = f"£/€{int(sal_min or 0):,}–{int(sal_max or 0):,}"
+
+                jobs.append({
+                    "title": title,
+                    "company": company,
+                    "link": link,
+                    "description": desc,
+                    "location": loc,
+                    "location_type": loc_type,
+                    "salary": salary,
+                    "source": f"Adzuna-{country.upper()}",
+                })
+        except Exception as e:
+            print(f"  Adzuna {country}/{keywords[:30]} error: {e}")
+
+    print(f"  Adzuna: {len(jobs)} EU-eligible matches across {len(ADZUNA_SEARCHES)} searches")
     return jobs
 
 
@@ -411,23 +558,26 @@ def scrape_career_pages():
 # ═════════════════════════════════════════════════════════════
 
 def score_job(job):
-    """Score job fit using Claude AI. Returns dict with score + tailored content."""
+    """Score job fit using Claude AI. Returns dict with score + tailored content.
+    Evaluates both traditional insurance operations AND new AI Product Engineer roles."""
     if not ANTHROPIC_API_KEY:
         return {"score": 0, "reason": "No API key"}
 
+    # Build skills list from both traditional ops and AI stack
     skills_list = ", ".join(
         PROFILE["core_competencies"]["operations_process"][:3] +
         PROFILE["core_competencies"]["compliance_governance"][:2] +
-        PROFILE["core_competencies"]["data_technology"][:4]
+        PROFILE["core_competencies"]["data_technology"][:3] +
+        PROFILE["core_competencies"]["ai_automation_stack"][:3]
     )
-    roles_list = ", ".join(PROFILE["target_roles"][:6])
-    companies_list = ", ".join(PROFILE["target_company_types"][:5])
+    roles_list = ", ".join(PROFILE["target_roles"][:10])
+    companies_list = ", ".join(PROFILE["target_company_types"][:8])
 
-    prompt = f"""You are a career advisor for insurance operations professionals.
+    prompt = f"""You are a career advisor for insurance operations + AI automation professionals.
 
 CANDIDATE: {PROFILE['name']}, {PROFILE['location']}
 EXPERIENCE: {PROFILE['experience_summary']}
-TARGET ROLES: {roles_list}
+TARGET ROLES (traditional + AI): {roles_list}
 TARGET COMPANIES: {companies_list}
 KEY SKILLS: {skills_list}
 LANGUAGES: English C2, French C1, Spanish native, Italian B2
@@ -441,22 +591,62 @@ Location: {job['location']}
 Source: {job['source']}
 Description: {job['description'][:800]}
 
-SCORING RULES:
-- 90-100: Perfect match — insurance/reinsurance operations, remote EU, senior level
-- 80-89: Strong match — operations role at insurer/insurtech/MGA, EU eligible
-- 70-79: Good match — adjacent role (data ops, programme mgmt) at insurance company
-- 50-69: Weak match — insurance-related but wrong function or location unclear
-- 0-49: Poor match — wrong domain, wrong location, junior level, or non-operations role
+SCORING RUBRIC:
 
-HARD REJECT (score 0):
+### TIER 1: PERFECT MATCH (90-100) ⭐⭐⭐⭐⭐
+- Traditional operations: Insurance/reinsurance ops, remote EU, senior level, €60K+
+- OR AI Product Engineer: Claude/LLM APIs + (Finance/Insurance domain knowledge), remote EU
+- OR Business Analyst: InsurTech/FinTech/MGA, process ownership focus, remote EU, €60K+
+- Explicitly values domain expertise translation into automation or process improvement
+
+### TIER 2: STRONG MATCH (80-89) ⭐⭐⭐⭐
+- Operations or BA role at insurer/insurtech/MGA, EU eligible
+- OR AI/automation role mentioning LangChain/LangGraph/Claude with finance/insurance context
+- BA roles where process documentation + stakeholder management = clear requirements match
+- Clear path to own end-to-end processes (manual → improved/automated)
+
+### TIER 3: GOOD MATCH (70-79) ⭐⭐⭐
+- Adjacent role: data ops, programme mgmt, BA, process automation at insurance/fintech company
+- OR: AI role with transferable skills (Python, SQL, API integration) in ANY domain, remote EU
+- Business Analyst at fintech/scale-up where insurance experience is transferable advantage
+
+### TIER 4: WEAK MATCH (50-69) ⭐⭐
+- Insurance-related but wrong function (pure sales, claims adjuster) OR location unclear
+- BA role at generic company with no insurance/fintech domain — learning curve on domain
+- Would need convincing about domain expertise relevance
+
+### TIER 5: POOR MATCH (0-49) ⚠️
+- Wrong domain entirely (pure FAANG SWE, pure ML research, public sector BA)
+- Wrong location (on-site Asia, hard-reject timezones)
+- Junior/intern/graduate unless exceptional AI + domain combo
+- Explicitly requires experience candidate lacks (actuary, PhD ML, 5+ years pure AI)
+
+### HARD REJECT (score 0):
 - On-site outside Barcelona
 - Hybrid outside Barcelona
-- Junior/graduate/intern
-- Pure software engineering, actuarial, or sales agent roles
 - Salary explicitly below €50,000
+- Junior/graduate/intern roles without compelling domain + AI angle
+- Pure actuarial or pure software engineering (no domain bridge)
+- Requires 5+ years AI/ML experience (candidate has 1yr practical + certs)
+- AI Research Scientist (not AI Product Engineer or BA)
+
+### AI PRODUCT ENGINEER REFRAME RULES:
+If role asks for "AI/ML experience" at different level than candidate has:
+- "1-3 years AI experience needed" → ACCEPT: has 1 year practical + Anthropic certs + 10 years domain
+- "LangChain/LangGraph required" → ACCEPT: has CrewAI + LangGraph portfolio projects
+- "Background in Physics/ML" → ACCEPT: 3 years science + autodidact demonstrated, 10 years domain
+- "Product mindset" → ACCEPT: 10 years translating business needs to tech specs
+- Missing 5+ years pure AI → REJECT (too junior for senior AI Product Engineer)
+
+### BUSINESS ANALYST SCORING NOTES:
+- BA at InsurTech/MGA/Reinsurer with 10yr domain experience → score 80-90
+- BA at FinTech/scale-up where insurance knowledge is advantage → score 70-80
+- BA at generic company with process improvement focus → score 50-65
+- "Requirements gathering", "stakeholder management", "SOP", "process mapping" = strong signals
+- Key BA signal: does the JD mention financial services, insurance, or regulatory compliance?
 
 If score >= 75, also provide:
-- A 3-sentence tailored CV summary in English
+- A 3-sentence tailored CV summary in English (emphasize: domain expert building AI systems)
 - A 3-sentence tailored CV summary in Spanish
 - A 3-sentence cover letter opening in English
 - A 3-sentence cover letter opening in Spanish
@@ -762,7 +952,7 @@ def send_email(matched_jobs):
         return
 
     msg = MIMEMultipart("mixed")
-    msg["Subject"] = f"🎯 {len(matched_jobs)} Insurance Ops Match(es) — {TODAY}"
+    msg["Subject"] = f"🎯 {len(matched_jobs)} Job Match(es) — Ops/BA/AI — {TODAY}"
     msg["From"] = f"Job Hunter <{GMAIL_USER}>"
     msg["To"] = GMAIL_USER
 
@@ -847,6 +1037,8 @@ def main():
     all_jobs += scrape_rss()
     print("  → Career pages")
     all_jobs += scrape_career_pages()
+    print("  → Adzuna (EU-wide keyword search)")
+    all_jobs += scrape_adzuna()
 
     print(f"\n📊 Total EU-eligible listings: {len(all_jobs)}")
 
