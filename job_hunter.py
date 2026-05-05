@@ -194,17 +194,20 @@ def is_insurance_relevant(text):
                      "ai agent", "ai implementation", "ai automation", "rag", "mcp",
                      "automation engineer", "ai-powered", "ai-enabled"]
 
-    # Domain context keywords for AI roles (finance/insurance operations)
-    domain_context = ["finance operations", "treasury", "claims automation", "underwriting automation",
-                      "fintech", "insurance automation", "operations ai", "business automation",
-                      "workflow", "process mining", "rpa", "robotic process"]
+    # Domain context keywords for AI roles (STRICT: finance/insurance specific, not generic business)
+    finance_insurance_domain = [
+        "claims automation", "underwriting automation", "claims processing",
+        "fintech", "insurance automation", "operations ai",
+        "treasury operations", "finance operations", "financial automation",
+        "insurance operations", "reinsurance", "policy management", "bordereaux"
+    ]
 
     has_insurance = any(kw in t for kw in strong_insurance)
     has_ai = any(kw in t for kw in ai_automation)
-    has_domain = any(kw in t for kw in domain_context)
+    has_finance_insurance = any(kw in t for kw in finance_insurance_domain)
 
-    # Accept: traditional insurance OR (AI/automation + domain context)
-    return has_insurance or (has_ai and has_domain)
+    # Accept: traditional insurance OR (AI/automation + finance/insurance domain)
+    return has_insurance or (has_ai and has_finance_insurance)
 
 def is_eu_eligible(location_text, description_text=""):
     """Check if role is remote EU or Barcelona-based."""
