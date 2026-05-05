@@ -61,6 +61,7 @@ EU_REMOTE_KEYWORDS = [
 
 # Ashby ATS companies
 ASHBY_COMPANIES = [
+    # Traditional InsurTech (domain-focused)
     {"name": "Descartes Underwriting", "client": "descartesunderwriting"},
     {"name": "Cytora",                 "client": "cytora"},
     {"name": "Artificial Labs",        "client": "artificial"},
@@ -72,6 +73,10 @@ ASHBY_COMPANIES = [
     {"name": "Zego",                   "client": "zego"},
     {"name": "Lassie",                 "client": "lassie"},
     {"name": "YuLife",                 "client": "yulife"},
+    # New: AI-focused InsurTech and automation platforms
+    {"name": "Embat",                  "client": "embat"},
+    {"name": "Tractable",              "client": "tractable"},
+    {"name": "Shift Technology",       "client": "shifttechnology"},
 ]
 
 # Greenhouse ATS companies
@@ -126,12 +131,18 @@ CAREER_PAGES += [
     {"name": "KPMG (Insurance Advisory)", "url": "https://home.kpmg/careers"},
     {"name": "FTI Consulting (EMEA)", "url": "https://www.fticonsulting.com/careers"},
     {"name": "Synpulse", "url": "https://www.synpulse.com/careers/"},
+    # New: AI/Automation InsurTech platforms and solutions
+    {"name": "Embat", "url": "https://www.embat.com/careers"},
+    {"name": "Tractable (AI Claims)", "url": "https://www.tractable.ai/careers"},
+    {"name": "Shift Technology", "url": "https://www.shift-technology.com/careers"},
+    {"name": "Concirrus (InsurTech AI)", "url": "https://www.concirrus.com/careers"},
 ]
 # Remotive API — working JSON API for remote jobs
 REMOTIVE_CATEGORIES = [
     "finance",
     "business",
     "all-others",
+    "software-dev",  # For AI/automation engineer roles in finance/insurance
 ]
 
 # RSS feeds that actually work
@@ -169,12 +180,31 @@ def save_seen(seen):
         print(f"    save_seen error: {e}")
 
 def is_insurance_relevant(text):
-    """Check if job text contains insurance/insurtech keywords."""
+    """Check if job contains insurance OR AI automation + domain context (new scope)."""
     t = text.lower()
-    strong = ["insurance", "insurtech", "reinsurance", "underwriting", "mga ",
-              "managing general", "coverholder", "lloyd's", "actuar", "claims",
-              "broker", "solvency", "dua", "delegated underwriting"]
-    return any(kw in t for kw in strong)
+
+    # Traditional insurance keywords
+    strong_insurance = ["insurance", "insurtech", "reinsurance", "underwriting", "mga ",
+                       "managing general", "coverholder", "lloyd's", "actuar", "claims",
+                       "broker", "solvency", "dua", "delegated underwriting"]
+
+    # New: AI/automation keywords (especially finance/insurance focused)
+    ai_automation = ["claude api", "langchain", "langgraph", "crewai", "workflow automation",
+                     "process automation", "prompt engineer", "llm", "generative ai",
+                     "ai agent", "ai implementation", "ai automation", "rag", "mcp",
+                     "automation engineer", "ai-powered", "ai-enabled"]
+
+    # Domain context keywords for AI roles (finance/insurance operations)
+    domain_context = ["finance operations", "treasury", "claims automation", "underwriting automation",
+                      "fintech", "insurance automation", "operations ai", "business automation",
+                      "workflow", "process mining", "rpa", "robotic process"]
+
+    has_insurance = any(kw in t for kw in strong_insurance)
+    has_ai = any(kw in t for kw in ai_automation)
+    has_domain = any(kw in t for kw in domain_context)
+
+    # Accept: traditional insurance OR (AI/automation + domain context)
+    return has_insurance or (has_ai and has_domain)
 
 def is_eu_eligible(location_text, description_text=""):
     """Check if role is remote EU or Barcelona-based."""
@@ -381,19 +411,23 @@ def scrape_rss():
 
 
 def scrape_career_pages():
-    """Check career pages for insurance operations keywords. Lightweight check."""
+    """Check career pages for operations OR AI/automation keywords. Lightweight check."""
     jobs = []
     ops_keywords = ["operations", "ops manager", "underwriting ops", "process",
                     "bpo", "programme manager", "program manager"]
+    ai_keywords = ["ai", "automation", "claude", "llm", "langchain", "agent",
+                   "machine learning", "workflow", "automation engineer", "ai engineer"]
     for co in CAREER_PAGES:
         r = fetch(co["url"])
         if not r:
             continue
         text = r.text.lower()
-        found = [kw for kw in ops_keywords if kw in text]
+        found_ops = [kw for kw in ops_keywords if kw in text]
+        found_ai = [kw for kw in ai_keywords if kw in text]
+        found = found_ops + found_ai
         if found and ("remote" in text or "barcelona" in text or "spain" in text or "europe" in text):
             jobs.append({
-                "title": f"Operations roles detected at {co['name']}",
+                "title": f"Operations/AI roles detected at {co['name']}",
                 "company": co["name"],
                 "link": co["url"],
                 "description": f"Keywords found: {', '.join(found)}. Check career page for specific roles.",
@@ -402,7 +436,7 @@ def scrape_career_pages():
                 "salary": "",
                 "source": "Career Page",
             })
-    print(f"  Career pages: {len(jobs)} with ops keywords")
+    print(f"  Career pages: {len(jobs)} with ops/AI keywords")
     return jobs
 
 
@@ -411,23 +445,26 @@ def scrape_career_pages():
 # ═════════════════════════════════════════════════════════════
 
 def score_job(job):
-    """Score job fit using Claude AI. Returns dict with score + tailored content."""
+    """Score job fit using Claude AI. Returns dict with score + tailored content.
+    Evaluates both traditional insurance operations AND new AI Product Engineer roles."""
     if not ANTHROPIC_API_KEY:
         return {"score": 0, "reason": "No API key"}
 
+    # Build skills list from both traditional ops and AI stack
     skills_list = ", ".join(
         PROFILE["core_competencies"]["operations_process"][:3] +
         PROFILE["core_competencies"]["compliance_governance"][:2] +
-        PROFILE["core_competencies"]["data_technology"][:4]
+        PROFILE["core_competencies"]["data_technology"][:3] +
+        PROFILE["core_competencies"]["ai_automation_stack"][:3]
     )
-    roles_list = ", ".join(PROFILE["target_roles"][:6])
-    companies_list = ", ".join(PROFILE["target_company_types"][:5])
+    roles_list = ", ".join(PROFILE["target_roles"][:10])
+    companies_list = ", ".join(PROFILE["target_company_types"][:8])
 
-    prompt = f"""You are a career advisor for insurance operations professionals.
+    prompt = f"""You are a career advisor for insurance operations + AI automation professionals.
 
 CANDIDATE: {PROFILE['name']}, {PROFILE['location']}
 EXPERIENCE: {PROFILE['experience_summary']}
-TARGET ROLES: {roles_list}
+TARGET ROLES (traditional + AI): {roles_list}
 TARGET COMPANIES: {companies_list}
 KEY SKILLS: {skills_list}
 LANGUAGES: English C2, French C1, Spanish native, Italian B2
@@ -441,22 +478,53 @@ Location: {job['location']}
 Source: {job['source']}
 Description: {job['description'][:800]}
 
-SCORING RULES:
-- 90-100: Perfect match — insurance/reinsurance operations, remote EU, senior level
-- 80-89: Strong match — operations role at insurer/insurtech/MGA, EU eligible
-- 70-79: Good match — adjacent role (data ops, programme mgmt) at insurance company
-- 50-69: Weak match — insurance-related but wrong function or location unclear
-- 0-49: Poor match — wrong domain, wrong location, junior level, or non-operations role
+SCORING RUBRIC:
 
-HARD REJECT (score 0):
+### TIER 1: PERFECT MATCH (90-100) ⭐⭐⭐⭐⭐
+- Traditional operations: Insurance/reinsurance operations, remote EU, senior level, €60K+
+- OR AI Product Engineer: Claude/LLM APIs + (Finance/Insurance domain knowledge), remote EU
+- Explicitly values domain expertise translation into AI automation
+
+### TIER 2: STRONG MATCH (80-89) ⭐⭐⭐⭐
+- Operations role at insurer/insurtech/MGA, EU eligible
+- OR AI/automation role mentioning LangChain/LangGraph/Claude with finance/insurance context
+- Clear path to own end-to-end processes (manual → automated)
+
+### TIER 3: GOOD MATCH (70-79) ⭐⭐⭐
+- Adjacent role: data ops, programme mgmt, process automation at insurance company
+- OR: AI role with transferable skills (Python, SQL, API integration) in ANY domain, remote EU
+- Candidate can demonstrate domain knowledge in interviews
+
+### TIER 4: WEAK MATCH (50-69) ⭐⭐
+- Insurance-related but wrong function (pure sales, claims adjuster) OR location unclear
+- OR: AI/automation role but no insurance/finance context, likely steep learning curve
+- Would need convincing about domain expertise relevance
+
+### TIER 5: POOR MATCH (0-49) ⚠️
+- Wrong domain entirely (pure FAANG SWE, pure ML research)
+- Wrong location (on-site Asia, hard-reject timezones)
+- Junior/intern/graduate unless exceptional AI + domain combo
+- Explicitly requires experience candidate lacks (actuary, PhD ML)
+
+### HARD REJECT (score 0):
 - On-site outside Barcelona
 - Hybrid outside Barcelona
-- Junior/graduate/intern
-- Pure software engineering, actuarial, or sales agent roles
 - Salary explicitly below €50,000
+- Junior/graduate/intern roles without "AI automation" + domain angle
+- Pure actuarial or pure software engineering (no domain bridge)
+- Requires 5+ years AI/ML experience (candidate has 1yr practical + certs)
+- AI Research Scientist (not AI Product Engineer)
+
+### AI PRODUCT ENGINEER REFRAME RULES:
+If role asks for "AI/ML experience" at different level than candidate has:
+- "1-3 years AI experience needed" → ACCEPT: has 1 year practical + Anthropic certs + 10 years domain
+- "LangChain/LangGraph required" → ACCEPT: has CrewAI + LangGraph portfolio projects
+- "Background in Physics/ML" → ACCEPT: 3 years science + autodidact demonstrated, 10 years domain
+- "Product mindset" → ACCEPT: 10 years translating business needs to tech specs
+- Missing 5+ years pure AI → REJECT (too junior for senior AI Product Engineer)
 
 If score >= 75, also provide:
-- A 3-sentence tailored CV summary in English
+- A 3-sentence tailored CV summary in English (emphasize: domain expert building AI systems)
 - A 3-sentence tailored CV summary in Spanish
 - A 3-sentence cover letter opening in English
 - A 3-sentence cover letter opening in Spanish

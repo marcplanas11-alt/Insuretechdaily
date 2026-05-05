@@ -37,6 +37,7 @@ PROFILE = {
 
     # ── Target Roles ─────────────────────────────────────────────
     "target_roles": [
+        # Traditional Operations (Core)
         "Operations Manager",
         "Insurance Operations Manager",
         "Underwriting Operations Specialist",
@@ -48,10 +49,19 @@ PROFILE = {
         "BPO Manager",
         "Process Excellence Manager",
         "Data Operations Manager",
+        # New: AI & Digital Workforce (Expanded Scope)
+        "AI Product Engineer",
+        "AI Implementation Specialist",
+        "Digital Workforce Specialist",
+        "AI Operations Specialist",
+        "AI-powered Operations Manager",
+        "AI/ML Operations Engineer",
+        "Automation Engineer (Finance/Insurance)",
     ],
 
     # ── Target Company Types ─────────────────────────────────────
     "target_company_types": [
+        # Traditional Insurance
         "Insurance company",
         "Reinsurance company",
         "Insurtech",
@@ -61,6 +71,13 @@ PROFILE = {
         "Insurance broker",
         "Reinsurance broker",
         "Insurance platform / SaaS",
+        # New: AI-Focused & Scale-ups
+        "AI-powered InsurTech",
+        "AI/ML startup (Finance/Insurance focus)",
+        "FinTech with insurance module",
+        "AI automation/workflow platform",
+        "AI agent orchestration platform",
+        "Scale-up (AI + domain expertise)",
     ],
 
     # ── Domain Experience ─────────────────────────────────────────
@@ -69,8 +86,11 @@ PROFILE = {
         "owning and improving end-to-end operational processes in MGA, broker and programme "
         "environments. Proven track record managing BPO supplier relationships, drafting and "
         "standardising SOPs, monitoring KPIs/KRIs/SLAs, and acting as primary operational "
-        "point of contact for managing agents and external partners. Experienced in designing "
-        "processes from scratch in start-up and scale-up environments."
+        "point of contact for managing agents and external partners. Now building AI agents "
+        "and automation tooling (Claude API, LangGraph, CrewAI) to automate the same complex "
+        "workflows managed manually for a decade. Certified in Anthropic AI stack (Prompt "
+        "Engineering, RAG, Tool Use, Agents, MCP). Experienced in designing processes from "
+        "scratch in start-up and scale-up environments."
     ),
 
     "core_competencies": {
@@ -81,6 +101,8 @@ PROFILE = {
             "BAU management",
             "Submission process management",
             "Account clearance & set-up",
+            "Process automation identification",
+            "Workflow optimization",
         ],
         "bpo_supplier_management": [
             "BPO oversight",
@@ -107,10 +129,28 @@ PROFILE = {
             "Python (intermediate)",
             "Power BI",
             "Snowflake",
-            "AI tools (ChatGPT, Copilot)",
+            "AI tools (ChatGPT, Claude, Copilot)",
             "Jira",
             "UAT",
             "MS Office & Google Workspace",
+        ],
+        "ai_automation_stack": [
+            "Claude API & Claude.ai",
+            "Prompt engineering (CoT, few-shot, XML structuring)",
+            "RAG (Retrieval Augmented Generation) concepts",
+            "LangChain / LangGraph workflow orchestration",
+            "AI agent design & deployment",
+            "GitHub Actions automation",
+            "CrewAI system design",
+            "MCP (Model Context Protocol)",
+        ],
+        "domain_expertise_translation": [
+            "10+ years Finance/Insurance ops knowledge",
+            "Identifying AI automation friction points",
+            "Business requirement → AI prompt design",
+            "Process simplification for AI deployment",
+            "Domain-specific validation logic",
+            "Compliance & risk assessment for AI systems",
         ],
     },
 
@@ -199,6 +239,7 @@ PROFILE = {
 
     # ── Scoring Keywords ─────────────────────────────────────────
     "keywords_high_priority": [
+        # Traditional insurance operations
         "insurance operations", "underwriting operations", "reinsurance operations",
         "MGA", "managing general agent", "delegated underwriting", "DUA",
         "Lloyd's", "coverholder", "programme", "program",
@@ -206,6 +247,15 @@ PROFILE = {
         "Solvency II", "sanctions", "OFAC", "compliance",
         "operations manager", "operations specialist", "operations analyst",
         "insurtech", "insurance platform",
+        # New: AI & automation focus
+        "AI product engineer", "AI implementation", "digital workforce",
+        "AI automation", "workflow automation", "process automation",
+        "Claude API", "LLM", "large language model", "generative AI",
+        "LangChain", "LangGraph", "agent", "orchestration",
+        "prompt engineering", "RAG", "retrieval augmented",
+        "AI-powered", "AI-enabled", "automated workflow",
+        "finance operations AI", "insurance automation", "claims automation",
+        "MCP", "CrewAI", "automation engineer",
     ],
 
     "keywords_medium_priority": [
@@ -214,11 +264,16 @@ PROFILE = {
         "remote", "EU", "Europe", "Barcelona", "Spain",
         "SQL", "Power BI", "Snowflake", "Python",
         "agile", "scrum", "continuous improvement",
+        "AI", "machine learning", "automation", "workflow",
+        "API", "integration", "data pipeline", "backend",
+        "GitHub Actions", "CI/CD", "automation platform",
+        "fintech", "finance automation", "treasury operations",
     ],
 
     "keywords_exclude": [
         "junior", "graduate", "intern", "entry level", "apprentice",
-        "software engineer", "frontend", "backend", "devops",
+        "pure software engineer", "pure frontend", "pure backend", "pure devops",
+        "data scientist (pure ML)", "research scientist",
         "actuary", "actuarial", "pricing analyst",
         "sales agent", "insurance agent", "life insurance agent",
         "claims adjuster", "field adjuster",
@@ -228,21 +283,24 @@ PROFILE = {
 
     # ── CV Summaries for AI generation ───────────────────────────
     "cv_summary_en": (
-        "Insurance and reinsurance operations professional with 10+ years of experience "
-        "owning and improving end-to-end operational processes in MGA, broker and programme "
-        "environments. Proven track record managing BPO supplier relationships, drafting and "
-        "standardising SOPs, monitoring KPIs/KRIs/SLAs, and acting as primary operational "
-        "point of contact for managing agents and external partners. Deep understanding of "
-        "Solvency II, sanctions screening (OFAC, HM Treasury, SDN), and regulatory compliance. "
-        "Fluent in English (C2), French (C1), Spanish (native) and Italian (B2)."
+        "Insurance operations professional with 10+ years building complex workflows in MGA, "
+        "reinsurance and broker environments. Now architect AI agents and automation systems "
+        "(Claude API, LangGraph, CrewAI) to automate the same processes managed manually for "
+        "a decade—translating operational domain expertise into production AI systems. Certified "
+        "in Anthropic AI stack; fluent in prompt engineering, RAG, agents and MCP. Deep "
+        "understanding of Solvency II, sanctions screening (OFAC), regulatory compliance and "
+        "operational controls. Bilingual English (C2) / Spanish (native), plus French (C1) "
+        "and Italian (B2)."
     ),
 
     "cv_summary_es": (
-        "Profesional de operaciones de seguros y reaseguros con más de 10 años de experiencia "
-        "en la gestión integral de procesos operativos en entornos MGA, corredores y programas "
-        "internacionales. Trayectoria demostrada en gestión de BPO, redacción de SOPs, "
-        "monitorización de KPIs/KRIs/SLAs, y coordinación con managing agents y partners externos. "
-        "Conocimiento profundo de Solvencia II, screening de sanciones (OFAC, HM Treasury, SDN) "
-        "y cumplimiento normativo. Fluido en inglés (C2), francés (C1), español (nativo) e italiano (B2)."
+        "Profesional de operaciones de seguros con 10+ años diseñando procesos complejos en "
+        "entornos MGA, reaseguros y corredores. Ahora construyo agentes AI y sistemas de "
+        "automatización (Claude API, LangGraph, CrewAI) para automatizar los mismos procesos "
+        "gestionados manualmente durante una década—traduciendo expertise de dominio en "
+        "sistemas AI en producción. Certificado en stack Anthropic; experto en prompt "
+        "engineering, RAG, agentes y MCP. Conocimiento profundo de Solvencia II, screening "
+        "de sanciones, cumplimiento normativo y controles operacionales. Bilingüe inglés "
+        "(C2) / español (nativo), más francés (C1) e italiano (B2)."
     ),
 }
