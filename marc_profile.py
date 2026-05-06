@@ -57,7 +57,7 @@ PROFILE = {
         "Digital Transformation Business Analyst",
         "Process Analyst",
         "Operational Business Analyst",
-        # New: AI & Digital Workforce (Expanded Scope)
+        # AI Product & Engineering (Expanded Scope)
         "AI Product Engineer",
         "AI Implementation Specialist",
         "Digital Workforce Specialist",
@@ -65,6 +65,15 @@ PROFILE = {
         "AI-powered Operations Manager",
         "AI/ML Operations Engineer",
         "Automation Engineer (Finance/Insurance)",
+        # AI Engineering
+        "AI Engineer",
+        "AI Software Engineer",
+        "AI Solutions Engineer",
+        "Machine Learning Engineer (Finance/Insurance)",
+        "Conversational AI Engineer",
+        "AI Platform Engineer",
+        "LLM Engineer",
+        "Generative AI Engineer",
     ],
 
     # ── Target Company Types ─────────────────────────────────────
@@ -267,6 +276,10 @@ PROFILE = {
         "AI-powered", "AI-enabled", "automated workflow",
         "finance operations AI", "insurance automation", "claims automation",
         "MCP", "CrewAI", "automation engineer",
+        # AI Engineering
+        "AI engineer", "AI software engineer", "machine learning engineer",
+        "AI solutions engineer", "LLM engineer", "generative AI engineer",
+        "conversational AI", "AI platform engineer", "AI developer",
     ],
 
     "keywords_medium_priority": [
