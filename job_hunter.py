@@ -1,7 +1,8 @@
 """
-AI Job Hunter v2 — Marc Planas
-Rebuilt from scratch. Scans working job APIs daily, scores with Claude AI,
-generates tailored PDF CVs + cover letters, researches companies, logs to tracker.
+AI Job Hunter v3 — Marc Planas Callico
+Triple-Track job scanner: Insurance Ops/AI (A) · BA/Digital Transformation (B) · AI Product Engineer (C)
+Implements Prompt Maestro v5.0: Phase 1 blockers → Phase 2 track ID → Phase 3 weighted scoring → Phase 4 output.
+Scans ATS APIs + RSS + Adzuna daily, scores with Claude AI, generates PDFs, logs to tracker.
 """
 
 import os
@@ -104,6 +105,9 @@ GREENHOUSE_COMPANIES = [
     {"name": "Hippo Insurance",    "client": "hippoinsurance"},
     {"name": "Openly",             "client": "openly"},
     {"name": "Kin Insurance",      "client": "kininsurance"},
+    # Track B/C — AI + consulting + transformation (Greenhouse)
+    {"name": "Palantir",           "client": "palantir"},
+    {"name": "Weights & Biases",   "client": "wandb"},
 ]
 
 # Lever ATS companies
@@ -137,8 +141,9 @@ CAREER_PAGES = [
     {"name": "Coalition",          "url": "https://www.coalitioninc.com/careers"},
     {"name": "Counterpart",        "url": "https://www.counterpart.com/careers"},
 ]
-# Add to CAREER_PAGES — consultancies and EU insurance-consulting firms
+# Add to CAREER_PAGES — consultancies, EU insurance-consulting, and AI platforms
 CAREER_PAGES += [
+    # Track A/B — Consulting & insurance advisory
     {"name": "zeb", "url": "https://zeb-career.com/"},
     {"name": "Milliman (EMEA)", "url": "https://www.milliman.com/careers"},
     {"name": "Aon", "url": "https://www.aon.com/careers"},
@@ -151,11 +156,17 @@ CAREER_PAGES += [
     {"name": "KPMG (Insurance Advisory)", "url": "https://home.kpmg/careers"},
     {"name": "FTI Consulting (EMEA)", "url": "https://www.fticonsulting.com/careers"},
     {"name": "Synpulse", "url": "https://www.synpulse.com/careers/"},
-    # New: AI/Automation InsurTech platforms and solutions
+    # AI/Automation InsurTech platforms — Track A/C
     {"name": "Embat", "url": "https://www.embat.com/careers"},
     {"name": "Tractable (AI Claims)", "url": "https://www.tractable.ai/careers"},
     {"name": "Shift Technology", "url": "https://www.shift-technology.com/careers"},
     {"name": "Concirrus (InsurTech AI)", "url": "https://www.concirrus.com/careers"},
+    # Track C — AI Product / Digital Workforce platforms (EU-remote)
+    {"name": "Aisera", "url": "https://aisera.com/careers/"},
+    {"name": "Inari (InsurTech AI)", "url": "https://inari.com/careers"},
+    {"name": "Akur8", "url": "https://www.akur8.com/careers"},
+    {"name": "Dacadoo", "url": "https://www.dacadoo.com/careers/"},
+    {"name": "Bdeo", "url": "https://bdeo.io/en/careers/"},
 ]
 # Remotive API — working JSON API for remote jobs
 REMOTIVE_CATEGORIES = [
@@ -180,15 +191,30 @@ ADZUNA_APP_ID  = os.environ.get("ADZUNA_APP_ID", "")
 ADZUNA_APP_KEY = os.environ.get("ADZUNA_APP_KEY", "")
 
 ADZUNA_SEARCHES = [
+    # Track A — Insurance Ops / AI Transformation
     {"country": "gb", "keywords": "insurance operations manager remote"},
-    {"country": "gb", "keywords": "underwriting operations remote"},
-    {"country": "gb", "keywords": "insurtech operations remote"},
-    {"country": "gb", "keywords": "business analyst insurtech remote"},
-    {"country": "gb", "keywords": "AI product engineer insurance remote"},
-    {"country": "de", "keywords": "insurance operations remote"},
-    {"country": "fr", "keywords": "insurance operations remote"},
+    {"country": "gb", "keywords": "underwriting operations MGA remote"},
+    {"country": "gb", "keywords": "insurtech operations manager remote"},
+    {"country": "gb", "keywords": "reinsurance operations specialist remote"},
+    {"country": "gb", "keywords": "MGA operations manager remote"},
+    {"country": "de", "keywords": "insurance operations remote Europe"},
+    {"country": "fr", "keywords": "insurance operations manager remote"},
     {"country": "es", "keywords": "insurance operations remote"},
     {"country": "nl", "keywords": "insurance operations remote"},
+    # Track B — BA / Digital Transformation
+    {"country": "gb", "keywords": "business analyst insurtech remote"},
+    {"country": "gb", "keywords": "digital transformation analyst financial services remote"},
+    {"country": "gb", "keywords": "business analyst AI insurance remote"},
+    {"country": "gb", "keywords": "process analyst fintech remote"},
+    {"country": "de", "keywords": "business analyst digital transformation insurance remote"},
+    {"country": "nl", "keywords": "business analyst insurtech remote"},
+    # Track C — AI Product Engineer / Digital Workforce
+    {"country": "gb", "keywords": "AI product engineer insurance fintech remote"},
+    {"country": "gb", "keywords": "AI implementation specialist financial services remote"},
+    {"country": "gb", "keywords": "LangGraph LangChain engineer insurance remote"},
+    {"country": "gb", "keywords": "digital workforce specialist AI agent remote"},
+    {"country": "de", "keywords": "AI product engineer fintech remote"},
+    {"country": "nl", "keywords": "AI automation engineer financial services remote"},
 ]
 
 # ═════════════════════════════════════════════════════════════
@@ -221,43 +247,70 @@ def save_seen(seen):
         print(f"    save_seen error: {e}")
 
 def is_insurance_relevant(text):
-    """Check if job contains insurance/fintech domain OR AI + finance/insurance domain."""
+    """Check if job is relevant for any of the three tracks.
+
+    Track A: Insurance/reinsurance/MGA domain roles.
+    Track B: BA/digital transformation at insurance/fintech.
+    Track C: AI Product Engineer / agent orchestration with finance-insurance domain context.
+    """
     t = text.lower()
 
-    # Traditional insurance/fintech keywords
-    strong_insurance = ["insurance", "insurtech", "reinsurance", "underwriting", "mga ",
-                       "managing general", "coverholder", "lloyd's", "actuar", "claims",
-                       "broker", "solvency", "dua", "delegated underwriting",
-                       "fintech", "financial services", "insuretechdaily"]
+    # Track A — core insurance/reinsurance domain
+    strong_insurance = [
+        "insurance", "insurtech", "reinsurance", "underwriting", "mga ",
+        "managing general", "coverholder", "lloyd's", "actuar", "claims",
+        "broker", "solvency", "dua", "delegated underwriting",
+        "fintech", "financial services", "insuretechdaily", "bordereaux",
+    ]
 
-    # Business analysis at insurance/fintech
-    ba_insurance = ["business analyst", "process analyst", "operational analyst",
-                    "digital transformation", "business analysis"]
+    # Track B — BA / digital transformation signals
+    ba_keywords = [
+        "business analyst", "process analyst", "operational analyst",
+        "digital transformation", "business analysis",
+        "requirements elicitation", "bpmn", "gap analysis", "user stories",
+        "stakeholder management", "process mapping",
+    ]
 
-    # AI/automation keywords (tool-specific)
-    ai_automation = ["claude api", "langchain", "langgraph", "crewai",
-                     "prompt engineer", "llm", "generative ai",
-                     "ai agent", "ai implementation", "ai automation", "rag", "mcp",
-                     "ai-powered", "ai-enabled"]
+    # Track C — AI Product Engineer / agent orchestration (tool-specific)
+    ai_automation = [
+        "claude api", "langchain", "langgraph", "crewai",
+        "prompt engineer", "llm", "generative ai",
+        "ai agent", "ai implementation", "ai automation", "rag", "mcp",
+        "ai-powered", "ai-enabled", "digital workforce", "ai product engineer",
+        "agentic", "agent orchestration", "workflow automation",
+    ]
 
-    # Domain context for AI roles (STRICT: insurance/finance specific)
+    # Finance/insurance domain context (required for Track C to be accepted)
     finance_insurance_domain = [
         "claims automation", "underwriting automation", "claims processing",
         "insurance automation", "operations ai", "fintech",
         "treasury operations", "finance operations", "financial automation",
         "insurance operations", "reinsurance", "policy management", "bordereaux",
-        "financial services"
+        "financial services", "insurance platform", "mga", "insurtech",
+    ]
+
+    # Track B also accepted at any regulated/financial services context
+    regulated_domain = finance_insurance_domain + [
+        "regulatory", "compliance", "financial", "banking", "payments",
+        "asset management", "wealth management",
     ]
 
     has_insurance = any(kw in t for kw in strong_insurance)
-    has_ba = any(kw in t for kw in ba_insurance)
+    has_ba = any(kw in t for kw in ba_keywords)
     has_ai = any(kw in t for kw in ai_automation)
-    has_finance_insurance = any(kw in t for kw in finance_insurance_domain)
+    has_finance_domain = any(kw in t for kw in finance_insurance_domain)
+    has_regulated = any(kw in t for kw in regulated_domain)
 
-    # Accept: traditional insurance/fintech (includes BA at those companies)
-    # OR: BA keyword + insurance/fintech domain
-    # OR: AI tools + finance/insurance domain
-    return has_insurance or (has_ba and has_finance_insurance) or (has_ai and has_finance_insurance)
+    # Track A: traditional insurance/fintech domain
+    if has_insurance:
+        return True
+    # Track B: BA/transformation + regulated/financial context
+    if has_ba and has_regulated:
+        return True
+    # Track C: AI orchestration tools + finance-insurance domain
+    if has_ai and has_finance_domain:
+        return True
+    return False
 
 def is_eu_eligible(location_text, description_text=""):
     """Check if role is remote EU or Barcelona-based."""
@@ -279,13 +332,26 @@ def log_to_tracker(job, ai_result):
         with open(TRACKER_FILE, "a", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
             if not exists:
-                w.writerow(["Date", "Title", "Company", "Source", "Score",
-                            "Location", "Salary", "Reason", "Link", "Status"])
+                w.writerow([
+                    "Date", "Title", "Company", "Source", "Track", "Score",
+                    "Recommendation", "Location", "Salary", "Blockers",
+                    "Reason", "CV_To_Use", "Link", "Status",
+                ])
             w.writerow([
-                TODAY, job.get("title", ""), job.get("company", ""),
-                job.get("source", ""), ai_result.get("score", ""),
-                ai_result.get("location_type", ""), ai_result.get("salary_info", ""),
-                ai_result.get("reason", ""), job.get("link", ""), "New"
+                TODAY,
+                job.get("title", ""),
+                job.get("company", ""),
+                job.get("source", ""),
+                ai_result.get("track", ""),
+                ai_result.get("score", ""),
+                ai_result.get("recommendation", ""),
+                ai_result.get("location_type", ""),
+                ai_result.get("salary_info", ""),
+                ai_result.get("blockers", ""),
+                ai_result.get("reason", ""),
+                ai_result.get("cv_to_use", ""),
+                job.get("link", ""),
+                "New",
             ])
     except Exception as e:
         print(f"    log_to_tracker error: {e}")
@@ -560,101 +626,156 @@ def scrape_adzuna():
 # ═════════════════════════════════════════════════════════════
 
 def score_job(job):
-    """Score job fit using Claude AI. Returns dict with score + tailored content.
-    Evaluates both traditional insurance operations AND new AI Product Engineer roles."""
+    """Score job fit using Claude AI with the full triple-track Prompt Maestro v5.0 protocol.
+
+    Phase 1: Hard blockers (auto-discard).
+    Phase 2: Track identification (A / B / C / Mixed).
+    Phase 3: Track-specific weighted scoring matrix.
+    Phase 4: Structured output with CV adaptation hints.
+    """
     if not ANTHROPIC_API_KEY:
         return {"score": 0, "reason": "No API key"}
 
-    # Build skills list from both traditional ops and AI stack
-    skills_list = ", ".join(
-        PROFILE["core_competencies"]["operations_process"][:3] +
-        PROFILE["core_competencies"]["compliance_governance"][:2] +
-        PROFILE["core_competencies"]["data_technology"][:3] +
-        PROFILE["core_competencies"]["ai_automation_stack"][:3]
-    )
-    roles_list = ", ".join(PROFILE["target_roles"][:10])
-    companies_list = ", ".join(PROFILE["target_company_types"][:8])
+    ops_skills = ", ".join(PROFILE["core_competencies"]["operations_process"][:4])
+    ai_skills  = ", ".join(PROFILE["core_competencies"]["ai_automation_stack"][:6])
+    ba_skills  = ", ".join(PROFILE["core_competencies"]["ba_transformation"][:4])
+    compliance = ", ".join(PROFILE["core_competencies"]["compliance_governance"][:4])
 
-    prompt = f"""You are a career advisor for insurance operations + AI automation professionals.
+    prompt = f"""You are a precision career advisor implementing the Prompt Maestro v5.0 for Marc Planas Callico.
 
-CANDIDATE: {PROFILE['name']}, {PROFILE['location']}
-EXPERIENCE: {PROFILE['experience_summary']}
-TARGET ROLES (traditional + AI): {roles_list}
-TARGET COMPANIES: {companies_list}
-KEY SKILLS: {skills_list}
-LANGUAGES: English C2, French C1, Spanish native, Italian B2
-MIN SALARY: €{PROFILE['min_salary_eur']:,}/year
-LOCATION: Remote EU ✅ | Hybrid Barcelona ✅ | Everything else ❌
+═══════════════════════════════════════════════════════════
+CANDIDATE PROFILE — MARC PLANAS CALLICO
+═══════════════════════════════════════════════════════════
+Location: Barcelona · CET · Remote-ready EMEA
+Current role: Operations Data Manager · Accelerant (MGA Reinsurance, UK & Europe) · Apr 2025–Present
+Experience: 10+ years insurance/reinsurance operations (MGA, Lloyd's, delegated authority, bordereaux)
+Languages: Spanish/Catalan native · English C2 · French C1 · Italian B2
+Salary floor: €60K (absolute) | Target: €75K+ Track A/B · €65K+ Track C
 
-JOB:
+VERIFIED TECH STACK (production):
+- Python intermediate · SQL intermediate · Claude API (Anthropic certified) · CrewAI · LangGraph
+- MCP · n8n · Streamlit · Pytest · GitHub Actions · Power BI · Snowflake · Guidewire · Salesforce
+
+VERIFIED COMPETENCIES:
+- Operations/Process: {ops_skills}
+- AI/Automation: {ai_skills}
+- BA/Transformation: {ba_skills}
+- Compliance: {compliance}
+
+GITHUB PORTFOLIO (public, verified): github.com/intlinsure
+- reinsurance-contract-crew (CrewAI · 3-agent contract review · DORA-aligned)
+- claims-triage-langgraph (LangGraph · RAG · ChromaDB · HITL · Streamlit · Pytest)
+- insurance-ai-governance-pack (EU AI Act Arts 6-13 · DORA Art.28 · gap analysis)
+- bordereaux-intake-n8n-mcp (n8n · MCP · Claude API · bordereaux validation)
+- sql-insurance-data-quality · agent-evaluation-dashboard · ba-process-models
+
+═══════════════════════════════════════════════════════════
+JOB TO EVALUATE
+═══════════════════════════════════════════════════════════
 Title: {job['title']}
 Company: {job['company']}
 Location: {job['location']}
 Source: {job['source']}
-Description: {job['description'][:800]}
+Description: {job['description'][:900]}
 
-SCORING RUBRIC:
+═══════════════════════════════════════════════════════════
+EVALUATION PROTOCOL — EXECUTE IN ORDER
+═══════════════════════════════════════════════════════════
 
-### TIER 1: PERFECT MATCH (90-100) ⭐⭐⭐⭐⭐
-- Traditional operations: Insurance/reinsurance ops, remote EU, senior level, €60K+
-- OR AI Product Engineer: Claude/LLM APIs + (Finance/Insurance domain knowledge), remote EU
-- OR Business Analyst: InsurTech/FinTech/MGA, process ownership focus, remote EU, €60K+
-- Explicitly values domain expertise translation into automation or process improvement
+## PHASE 1 — HARD BLOCKERS (auto-score 0 if any present)
+Check for these in the JD. If found → score=0, state which blocker:
+- Madrid presencial / on-site Madrid
+- Salary explicitly below €55,000
+- PhD in AI/ML required
+- Open-source contributions to AI core frameworks required
+- AI Research Scientist (not AI Product Engineer)
+- Stack 100% model training / fine-tuning with no orchestration
+- Junior / graduate / intern role (unless exceptional AI + domain combo)
+- NTT Data or similar IT vendors without insurance practice
+- Sector completely unrelated (gaming, aerospace, unrelated manufacturing)
 
-### TIER 2: STRONG MATCH (80-89) ⭐⭐⭐⭐
-- Operations or BA role at insurer/insurtech/MGA, EU eligible
-- OR AI/automation role mentioning LangChain/LangGraph/Claude with finance/insurance context
-- BA roles where process documentation + stakeholder management = clear requirements match
-- Clear path to own end-to-end processes (manual → improved/automated)
+## PHASE 2 — TRACK IDENTIFICATION
+Identify which track(s) this role covers:
 
-### TIER 3: GOOD MATCH (70-79) ⭐⭐⭐
-- Adjacent role: data ops, programme mgmt, BA, process automation at insurance/fintech company
-- OR: AI role with transferable skills (Python, SQL, API integration) in ANY domain, remote EU
-- Business Analyst at fintech/scale-up where insurance experience is transferable advantage
+TRACK A — Insurance Ops / AI Transformation: JD mentions any of:
+MGA · Lloyd's · Delegated Authority · Bordereaux · Coverholder · Reinsurance Operations
+Insurance Platform · Binding Authority · Solvency II / DORA / IFRS 17 as requirements
 
-### TIER 4: WEAK MATCH (50-69) ⭐⭐
-- Insurance-related but wrong function (pure sales, claims adjuster) OR location unclear
-- BA role at generic company with no insurance/fintech domain — learning curve on domain
-- Would need convincing about domain expertise relevance
+TRACK B — Digital Transformation BA / Consultant: JD mentions any of:
+Business Analyst · Digital Transformation · Requirements · Stakeholder
+Process Improvement · BPMN · Agile BA · Gap Analysis · Consulting · Change Management
+Financial Services without specific insurance spec
 
-### TIER 5: POOR MATCH (0-49) ⚠️
-- Wrong domain entirely (pure FAANG SWE, pure ML research, public sector BA)
-- Wrong location (on-site Asia, hard-reject timezones)
-- Junior/intern/graduate unless exceptional AI + domain combo
-- Explicitly requires experience candidate lacks (actuary, PhD ML, 5+ years pure AI)
+TRACK C — AI Product Engineer / Digital Workforce: JD mentions any of:
+AI Product Engineer · AI Implementation · LLM · Agent · Workflow Automation
+Claude / GPT / LangChain / LangGraph / MCP · Hacker mindset · Ship fast
+Digital Workforce · Friction removal · Internal tooling
 
-### HARD REJECT (score 0):
-- On-site outside Barcelona
-- Hybrid outside Barcelona
-- Salary explicitly below €50,000
-- Junior/graduate/intern roles without compelling domain + AI angle
-- Pure actuarial or pure software engineering (no domain bridge)
-- Requires 5+ years AI/ML experience (candidate has 1yr practical + certs)
-- AI Research Scientist (not AI Product Engineer or BA)
+## PHASE 3 — SCORE WITH TRACK-SPECIFIC MATRIX
 
-### AI PRODUCT ENGINEER REFRAME RULES:
-If role asks for "AI/ML experience" at different level than candidate has:
-- "1-3 years AI experience needed" → ACCEPT: has 1 year practical + Anthropic certs + 10 years domain
-- "LangChain/LangGraph required" → ACCEPT: has CrewAI + LangGraph portfolio projects
-- "Background in Physics/ML" → ACCEPT: 3 years science + autodidact demonstrated, 10 years domain
-- "Product mindset" → ACCEPT: 10 years translating business needs to tech specs
-- Missing 5+ years pure AI → REJECT (too junior for senior AI Product Engineer)
+### IF TRACK A (or Mixed with A dominant):
+Score each axis 0-10, multiply by weight, sum for final:
+- Insurance domain match (MGA/Lloyd's/DA/Reinsurance): weight 0.30
+- AI/Automation stack match (CrewAI/LangGraph/Claude/n8n): weight 0.25
+- Seniority & scope fit (senior/lead, not junior/admin): weight 0.20
+- Compliance match (DORA/SolvII/IFRS17/OFAC): weight 0.15
+- Location/salary fit (EMEA remote, ≥€60K): weight 0.10
+Threshold to recommend application: ≥6.0/10 (i.e. 60/100 when scaled)
 
-### BUSINESS ANALYST SCORING NOTES:
-- BA at InsurTech/MGA/Reinsurer with 10yr domain experience → score 80-90
-- BA at FinTech/scale-up where insurance knowledge is advantage → score 70-80
-- BA at generic company with process improvement focus → score 50-65
-- "Requirements gathering", "stakeholder management", "SOP", "process mapping" = strong signals
-- Key BA signal: does the JD mention financial services, insurance, or regulatory compliance?
+### IF TRACK B (or Mixed with B dominant):
+Score each axis 0-10, multiply by weight, sum for final:
+- BA/process skills match (requirements, BPMN, gap analysis): weight 0.25
+- Digital/AI component (not pure BA without tech): weight 0.25
+- Domain transferability (insurance/finance/fintech): weight 0.20
+- Consulting/client-facing component: weight 0.15
+- Seniority + location/salary fit: weight 0.15
+Threshold: ≥6.0/10
 
-If score >= 75, also provide:
-- A 3-sentence tailored CV summary in English (emphasize: domain expert building AI systems)
-- A 3-sentence tailored CV summary in Spanish
-- A 3-sentence cover letter opening in English
-- A 3-sentence cover letter opening in Spanish
+### IF TRACK C (or Mixed with C dominant):
+Score each axis 0-10, multiply by weight, sum for final:
+- AI Stack match (LLM orchestration, agents, MCP, RAG): weight 0.25
+- Domain expertise required (finance/insurance/ops context): weight 0.25
+- Builder/ownership profile (ship fast, end-to-end ownership): weight 0.20
+- Business impact focus (KPIs business, not just tech metrics): weight 0.15
+- Seniority fit + location/salary: weight 0.15
+Threshold: ≥5.5/10 (lower — emergent profile, JDs over-spec)
 
-Respond ONLY in valid JSON:
-{{"score":<int>,"reason":"<1 sentence>","location_type":"<remote_eu|hybrid_barcelona|onsite|unclear>","salary_info":"<salary or 'not specified'>","cv_summary_en":"<or empty>","cv_summary_es":"<or empty>","cover_letter_en":"<or empty>","cover_letter_es":"<or empty>"}}"""
+### MIXED TRACKS: score from the most favorable track.
+
+## TRACK C GAP REFRAME RULES (apply automatically):
+- "1-3 years AI experience" → ACCEPT: 1yr practical + Anthropic certs + 10yr domain
+- "LangChain/LangGraph required" → ACCEPT: LangGraph + CrewAI portfolio verified
+- "Background in Physics/Math/ML" → ACCEPT: 3yr science + autodidact + 10yr domain
+- "Product mindset" → ACCEPT: 10yr translating business needs → tech specs
+- "5+ years pure AI experience" → REJECT (real gap, do not reframe)
+- "MLOps/Docker/K8s/cloud ML" → real gap, note honestly
+
+## OUTPUT FORMAT
+Return ONLY valid JSON — no markdown, no extra text:
+{{
+  "track": "<A|B|C|Mixed A+B|Mixed A+C|Mixed B+C>",
+  "score": <int 0-100>,
+  "score_breakdown": {{
+    "axis1": {{"name": "<axis name>", "raw": <0-10>, "weight": <float>, "points": <float>}},
+    "axis2": {{"name": "<axis name>", "raw": <0-10>, "weight": <float>, "points": <float>}},
+    "axis3": {{"name": "<axis name>", "raw": <0-10>, "weight": <float>, "points": <float>}},
+    "axis4": {{"name": "<axis name>", "raw": <0-10>, "weight": <float>, "points": <float>}},
+    "axis5": {{"name": "<axis name>", "raw": <0-10>, "weight": <float>, "points": <float>}}
+  }},
+  "blockers": "<blocker found, or 'None'>",
+  "gaps_and_reframe": "<key gaps and how to reframe, or 'None'>",
+  "recommendation": "<APPLY|DISCARD|CONDITIONAL — with condition>",
+  "reason": "<1-2 sentence summary>",
+  "location_type": "<remote_eu|hybrid_barcelona|onsite|unclear>",
+  "salary_info": "<salary range or 'not specified'>",
+  "cv_to_use": "<exact CV file: MarcPlanas_CV_English_Final_Updated.docx | MarcPlanas_TrackB_BA_Transformation_EN.docx | MarcPlanas_CV_AIProductEngineer_EN.docx>",
+  "keywords_to_mirror": "<top 5 ATS keywords from JD to mirror in CV>",
+  "github_projects_to_mention": "<1-3 most relevant from portfolio>",
+  "cv_summary_en": "<3-sentence tailored summary if score>=65, else empty>",
+  "cv_summary_es": "<3-sentence tailored summary if score>=65, else empty>",
+  "cover_letter_en": "<3-sentence opening if score>=65, else empty>",
+  "cover_letter_es": "<3-sentence opening if score>=65, else empty>"
+}}"""
 
     try:
         r = requests.post(
@@ -666,10 +787,10 @@ Respond ONLY in valid JSON:
             },
             json={
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 800,
+                "max_tokens": 1500,
                 "messages": [{"role": "user", "content": prompt}],
             },
-            timeout=30,
+            timeout=40,
         )
         if r.status_code != 200:
             print(f"    AI scoring API error: {r.status_code}")
@@ -973,7 +1094,7 @@ def send_email(matched_jobs):
         return
 
     msg = MIMEMultipart("mixed")
-    msg["Subject"] = f"🎯 {len(matched_jobs)} Job Match(es) — Ops/BA/AI — {TODAY}"
+    msg["Subject"] = f"🎯 {len(matched_jobs)} Job Match(es) — Track A/B/C — {TODAY}"
     msg["From"] = f"Job Hunter <{GMAIL_USER}>"
     msg["To"] = GMAIL_USER
 
@@ -990,13 +1111,30 @@ def send_email(matched_jobs):
         score = ai.get("score", "?")
         color = "#16a34a" if score >= 85 else "#2563eb" if score >= 75 else "#d97706"
 
+        track     = ai.get("track", "?")
+        rec       = ai.get("recommendation", "")
+        blockers  = ai.get("blockers", "")
+        gaps      = ai.get("gaps_and_reframe", "")
+        cv_file   = ai.get("cv_to_use", "")
+        kw_mirror = ai.get("keywords_to_mirror", "")
+        gh_proj   = ai.get("github_projects_to_mention", "")
+
         html.append(f"""
 <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;">
   <h3 style="margin:0;">#{i} <a href="{job['link']}" style="color:#1a2744;">{job['title']}</a></h3>
   <p style="color:#6b7280;margin:4px 0;">{job['company']} · {job['source']} · {job['location']}</p>
-  <div style="display:inline-block;background:{color};color:white;padding:4px 12px;border-radius:12px;font-weight:bold;margin:8px 0;">{score}%</div>
+  <div style="margin:8px 0;">
+    <span style="display:inline-block;background:{color};color:white;padding:4px 12px;border-radius:12px;font-weight:bold;">{score}%</span>
+    <span style="display:inline-block;background:#7c3aed;color:white;padding:4px 12px;border-radius:12px;font-weight:bold;margin-left:6px;">Track {track}</span>
+    <span style="display:inline-block;background:#065f46;color:white;padding:4px 12px;border-radius:12px;font-size:11px;margin-left:6px;">{rec}</span>
+  </div>
   <p><em>{ai.get('reason', '')}</em></p>
   <p><b>Location:</b> {ai.get('location_type', '')} · <b>Salary:</b> {ai.get('salary_info', 'not specified')}</p>
+  {"<p><b>⚠️ Blockers:</b> " + blockers + "</p>" if blockers and blockers != "None" else ""}
+  {"<p><b>🔄 Gaps/Reframe:</b> " + gaps + "</p>" if gaps and gaps != "None" else ""}
+  {"<p><b>📄 CV:</b> " + cv_file + "</p>" if cv_file else ""}
+  {"<p><b>🔑 Mirror keywords:</b> " + kw_mirror + "</p>" if kw_mirror else ""}
+  {"<p><b>💻 GitHub projects:</b> " + gh_proj + "</p>" if gh_proj else ""}
   {"<h4>Company Research</h4><pre style='background:#f8f8ff;padding:10px;border-radius:4px;font-size:12px;white-space:pre-wrap;'>" + research + "</pre>" if research else ""}
   <p><a href="{job['link']}" style="background:#1a2744;color:white;padding:8px 16px;text-decoration:none;border-radius:4px;">Apply →</a></p>
 </div>""")
@@ -1040,7 +1178,8 @@ def send_email(matched_jobs):
 
 def main():
     print(f"\n{'='*60}")
-    print(f"  AI Job Hunter v2 — {TODAY}")
+    print(f"  AI Job Hunter v3 — Triple Track — {TODAY}")
+    print(f"  Track A: Insurance Ops/AI · B: BA/Digital Transformation · C: AI Product Engineer")
     print(f"{'='*60}\n")
 
     seen = load_seen()
@@ -1087,8 +1226,10 @@ def main():
             continue
 
         score = result.get("score", 0)
+        track = result.get("track", "?")
+        rec   = result.get("recommendation", "")
         emoji = "🎯" if score >= 85 else "✅" if score >= 75 else "➖" if score >= 50 else "❌"
-        print(f"  {emoji} {score:3d}% — {job['title']} @ {job['company']}")
+        print(f"  {emoji} {score:3d}% [Track {track}] {rec} — {job['title']} @ {job['company']}")
 
         if score >= PROFILE["min_match_score"]:
             job["ai_result"] = result
