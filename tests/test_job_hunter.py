@@ -283,9 +283,12 @@ class TestLogToTracker:
     def _job(self, title="Ops Manager", company="Acme", source="Ashby", link="https://a.com"):
         return {"title": title, "company": company, "source": source, "link": link}
 
-    def _ai(self, score=85, location_type="remote", salary_info="€70K", reason="Good match"):
+    def _ai(self, score=85, location_type="remote", salary_info="€70K", reason="Good match",
+             track="A", recommendation="APPLY"):
         return {"score": score, "location_type": location_type,
-                "salary_info": salary_info, "reason": reason}
+                "salary_info": salary_info, "reason": reason,
+                "track": track, "recommendation": recommendation,
+                "blockers": "None", "cv_to_use": ""}
 
     def test_creates_header_on_first_write(self, tmp_path, monkeypatch):
         tracker_file = tmp_path / "tracker.csv"
@@ -293,6 +296,7 @@ class TestLogToTracker:
         job_hunter.log_to_tracker(self._job(), self._ai())
         rows = list(csv.DictReader(tracker_file.open()))
         assert len(rows) == 1
+        # Updated header includes Track, Recommendation, Blockers, CV_To_Use columns
         assert set(rows[0].keys()) >= {"Date", "Title", "Company", "Source",
                                         "Score", "Location", "Salary", "Reason", "Link", "Status"}
 
