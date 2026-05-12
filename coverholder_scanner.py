@@ -171,13 +171,15 @@ def sig_id(title, source):
 
 def load_seen():
     try:
-        return set(json.load(open(SEEN_FILE)))
+        with open(SEEN_FILE) as f:
+            return set(json.load(f))
     except Exception:
         return set()
 
 def save_seen(seen):
     try:
-        json.dump(list(seen), open(SEEN_FILE, "w"))
+        with open(SEEN_FILE, "w") as f:
+            json.dump(list(seen), f)
     except Exception as e:
         print(f"    save_seen error: {e}")
 

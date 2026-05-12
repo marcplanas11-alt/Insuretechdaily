@@ -198,13 +198,15 @@ def job_id(title, company):
 
 def load_seen():
     try:
-        return set(json.load(open(SEEN_FILE)))
+        with open(SEEN_FILE) as f:
+            return set(json.load(f))
     except Exception:
         return set()
 
 def save_seen(seen):
     try:
-        json.dump(list(seen), open(SEEN_FILE, "w"))
+        with open(SEEN_FILE, "w") as f:
+            json.dump(list(seen), f)
     except Exception as e:
         print(f"    save_seen error: {e}")
 
@@ -648,7 +650,18 @@ Respond ONLY in valid JSON:
             },
             timeout=30,
         )
-        text = r.json()["content"][0]["text"]
+        if r.status_code != 200:
+            print(f"    AI scoring API error: {r.status_code}")
+            return None
+        data = r.json()
+        content = data.get("content")
+        if not content:
+            print("    AI scoring error: empty content in response")
+            return None
+        text = content[0].get("text", "")
+        if not text:
+            print("    AI scoring error: empty text in response")
+            return None
         text = text.replace("```json", "").replace("```", "").strip()
         return json.loads(text)
     except Exception as e:
@@ -679,7 +692,15 @@ Cover: what they do (insurance/insurtech focus), size/funding, culture & remote 
             },
             timeout=30,
         )
-        return r.json()["content"][0]["text"].strip()
+        if r.status_code != 200:
+            print(f"    Research API error: {r.status_code}")
+            return ""
+        data = r.json()
+        content = data.get("content")
+        if not content:
+            return ""
+        text = content[0].get("text", "")
+        return text.strip()
     except Exception as e:
         print(f"    Research error: {e}")
         return ""
