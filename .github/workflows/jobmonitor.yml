@@ -1,6 +1,7 @@
 name: EU Insurance Remote Job Monitor v2
 
 on:
+  pull_request:
   schedule:
     - cron: '0 7 * * *'           # 8 AM CET daily
     - cron: '0 8 * * 1'           # 9 AM CET Monday digest
@@ -22,6 +23,22 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+
+
+  pr-validation:
+    name: 🧪 PR Workflow Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate workflow and script syntax
+        run: |
+          python -m py_compile job_hunter.py company_scanner.py coverholder_scanner.py weekly_digest.py
   check-jobs:
     name: 📊 Daily Job Scanner
     runs-on: ubuntu-latest
