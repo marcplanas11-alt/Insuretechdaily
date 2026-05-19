@@ -78,7 +78,6 @@ ASHBY_COMPANIES = [
     {"name": "Qover",                  "client": "qover"},
     {"name": "InMyBag",                "client": "inmybag"},
     # EU AI companies (expanded scope — remote + Barcelona hybrid)
-    {"name": "Mistral AI",             "client": "mistralai"},
     {"name": "Together AI",            "client": "togetherai"},
     {"name": "HuggingFace",            "client": "huggingface"},
 ]
@@ -106,6 +105,7 @@ LEVER_COMPANIES = [
     {"name": "Laka",         "client": "laka"},
     {"name": "Flock",        "client": "flock"},
     {"name": "Embroker",     "client": "embroker"},
+    {"name": "Mistral AI",   "client": "mistral"},
 ]
 
 # Direct career page checks (companies without standard ATS APIs)
@@ -232,6 +232,7 @@ def save_seen(seen):
 
 def is_insurance_relevant(text):
     """Check if job is relevant: insurance/fintech domain OR AI/digital transformation OR governance/compliance."""
+    import re
     t = text.lower()
 
     # Traditional insurance/fintech keywords
@@ -254,10 +255,12 @@ def is_insurance_relevant(text):
                      "machine learning engineer", "llm engineer", "ai solutions engineer",
                      "conversational ai", "ai platform", "ai developer", "ai operations"]
 
-    # AI governance & compliance (expanded scope)
-    ai_governance = ["ai governance", "ai compliance", "ai risk", "ai regulation",
-                     "responsible ai", "ai ethics", "dora", "eu ai act",
-                     "ai policy", "ai audit"]
+    # AI governance & compliance (use word boundaries for acronyms to avoid false matches)
+    ai_governance_patterns = [
+        r"\bai\s+governance\b", r"\bai\s+compliance\b", r"\bai\s+risk\b", r"\bai\s+regulation\b",
+        r"\bresponsible\s+ai\b", r"\bai\s+ethics\b", r"\bdora\b", r"\beu\s+ai\s+act\b",
+        r"\bai\s+policy\b", r"\bai\s+audit\b"
+    ]
 
     # Domain context for AI roles (broader: operations, finance, automation, governance)
     finance_ops_automation = [
@@ -272,7 +275,7 @@ def is_insurance_relevant(text):
     has_insurance = any(kw in t for kw in strong_insurance)
     has_ba = any(kw in t for kw in ba_transformation)
     has_ai = any(kw in t for kw in ai_automation)
-    has_governance = any(kw in t for kw in ai_governance)
+    has_governance = any(re.search(pattern, t) for pattern in ai_governance_patterns)
     has_finance_ops = any(kw in t for kw in finance_ops_automation)
 
     # Accept:
