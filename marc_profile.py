@@ -88,26 +88,40 @@ PROFILE = {
         "Insurance broker",
         "Reinsurance broker",
         "Insurance platform / SaaS",
-        # New: AI-Focused & Scale-ups
+        # New: AI-Focused & Scale-ups (expanded scope)
         "AI-powered InsurTech",
         "AI/ML startup (Finance/Insurance focus)",
         "FinTech with insurance module",
         "AI automation/workflow platform",
         "AI agent orchestration platform",
+        "AI governance / compliance platform",
         "Scale-up (AI + domain expertise)",
+        # Pure AI companies (EU-based, remote)
+        "AI model company",
+        "LLM platform",
+        "AI infrastructure",
+        "AI tools / frameworks",
+        "AI consulting / advisory",
+        # Digital transformation & consulting
+        "Digital transformation consultancy",
+        "Business transformation firm",
+        "IT transformation",
     ],
 
     # ── Domain Experience ─────────────────────────────────────────
     "experience_summary": (
-        "Insurance and reinsurance operations professional with 10+ years of experience "
-        "owning and improving end-to-end operational processes in MGA, broker and programme "
-        "environments. Proven track record managing BPO supplier relationships, drafting and "
-        "standardising SOPs, monitoring KPIs/KRIs/SLAs, and acting as primary operational "
-        "point of contact for managing agents and external partners. Now building AI agents "
-        "and automation tooling (Claude API, LangGraph, CrewAI) to automate the same complex "
-        "workflows managed manually for a decade. Certified in Anthropic AI stack (Prompt "
-        "Engineering, RAG, Tool Use, Agents, MCP). Experienced in designing processes from "
-        "scratch in start-up and scale-up environments."
+        "Insurance and reinsurance operations professional with 10+ years owning end-to-end "
+        "operational processes in MGA, broker and programme environments. Proven track record "
+        "managing BPO supplier relationships, drafting SOPs, monitoring KPIs/KRIs/SLAs, and "
+        "acting as primary operational point of contact for managing agents and external partners. "
+        "Now building AI agents and automation tooling (Claude API, LangGraph, CrewAI) to automate "
+        "the same complex workflows managed manually for a decade. Digital transformation practitioner: "
+        "BPMN process design, gap analysis, requirements definition, stakeholder alignment across "
+        "operations and IT. AI governance specialist: EU AI Act + DORA Art. 28 compliance tooling, "
+        "risk assessment, third-party vendor onboarding. Certified in Anthropic AI stack (Prompt "
+        "Engineering, RAG, Tool Use, Agents, MCP). Experienced in designing processes from scratch "
+        "in start-up and scale-up environments. Open to senior BA, AI governance, digital transformation, "
+        "and AI-enabled operations roles across EU."
     ),
 
     "core_competencies": {
