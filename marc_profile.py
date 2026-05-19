@@ -2,6 +2,7 @@
 Marc Planas Callico — Professional Profile v5.0
 Source of truth for job_hunter.py scoring and CV generation.
 Triple Track: Insurance Ops/AI (A) · BA/Digital Transformation (B) · AI Product Engineer (C)
+New Track D: AI Consultant/Lead/Architect (EU-focused AI platforms)
 """
 
 PROFILE = {
@@ -33,8 +34,9 @@ PROFILE = {
     "min_salary_eur": 60000,
     "target_salary_eur_ab": 75000,   # Track A/B target
     "target_salary_eur_c": 65000,    # Track C early-stage target
+    "target_salary_eur_d": 85000,    # Track D (Lead/Architect) — more senior
     "salary_note": (
-        "Floor €60K absolute. Target €75K+ Track A/B, €65K+ Track C early-stage. "
+        "Floor €60K absolute. Target €75K+ Track A/B, €65K+ Track C early-stage, €85K+ Track D Lead/Architect. "
         "Roles without salary info still considered."
     ),
 
@@ -79,6 +81,21 @@ PROFILE = {
             ],
             "threshold": 5.5,   # Lower: emergent profile, JDs often over-spec
         },
+        "D": {
+            "name": "AI Consultant / Lead / Architect (EU Platforms)",
+            "headline": (
+                "AI Consultant / Technical Lead · AI Agent Architecture · Claude/LLM Expertise "
+                "· Insurance/FinTech Domain · Remote EU/Barcelona · English C2 · French C1"
+            ),
+            "target_companies": [
+                "Anthropic Enterprise Consulting Partners (EU)",
+                "AI implementation consultancies (insurance/finance focus)",
+                "LangChain/LlamaIndex ecosystem companies",
+                "AI-native platforms expanding EU insurance market",
+                "Prompt engineering & AI architecture specialists",
+            ],
+            "threshold": 6.5,   # Higher: leadership position, expect strong match
+        },
     },
 
     # ── Target Roles ─────────────────────────────────────────────
@@ -113,6 +130,16 @@ PROFILE = {
         "AI Operations Specialist",
         "AI-powered Operations Manager",
         "Automation Engineer (Finance/Insurance)",
+        # Track D — AI Consultant / Lead / Architect
+        "AI Consultant (Enterprise)",
+        "AI Solutions Architect",
+        "Technical Lead — AI/LLM",
+        "AI Systems Architect",
+        "Prompt Engineering Lead",
+        "Head of AI Implementation",
+        "AI Technical Director",
+        "Principal AI Engineer",
+        "Lead AI/ML Engineer",
     ],
 
     # ── GitHub Projects (verified public portfolio) ───────────────
@@ -410,6 +437,15 @@ PROFILE = {
             "LlamaIndex / FAISS (HF course completed, portfolio in progress)",
             "A2A Agent2Agent Protocol (DeepLearning.AI in progress)",
         ],
+        "ai_consulting_leadership": [
+            "Claude API expert (production use, prompt optimization, cost reduction)",
+            "LLM architecture & multi-agent system design",
+            "RAG pipeline design for regulated sectors (insurance, finance)",
+            "AI governance frameworks (EU AI Act, DORA compliance)",
+            "Technical team leadership & mentoring",
+            "AI vendor evaluation & onboarding (DORA Art. 28)",
+            "ROI modeling for AI automation projects",
+        ],
         "data_bi": [
             "Power BI",
             "Snowflake",
@@ -459,6 +495,12 @@ PROFILE = {
             "mcp", "hacker mindset", "ship fast", "digital workforce",
             "friction removal", "internal tooling", "crewai", "rag",
         ],
+        "D": [
+            "ai consultant", "technical lead", "ai architect", "solutions architect",
+            "prompt engineer lead", "head of ai", "principal engineer",
+            "ai systems", "claude expert", "llm architect",
+            "ai governance", "ai implementation lead",
+        ],
     },
 
     # ── ATS Scoring Keywords ──────────────────────────────────────
@@ -485,6 +527,11 @@ PROFILE = {
         "AI-powered", "AI-enabled", "automated workflow",
         "MCP", "n8n", "human-in-the-loop",
         "finance operations AI", "insurance automation", "claims automation",
+        # Track D — AI Consultant / Lead / Architect
+        "AI consultant", "AI architect", "technical lead", "solutions architect",
+        "AI solutions", "prompt engineering lead", "head of AI",
+        "principal engineer", "AI governance", "Claude expert",
+        "AI systems architect", "AI implementation lead", "Chief AI Officer",
     ],
 
     "keywords_medium_priority": [
