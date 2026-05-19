@@ -66,13 +66,18 @@ def has_eu_signal(text):
 
 def load_seen():
     try:
-        return set(json.load(open(SEEN_FILE)))
+        with open(SEEN_FILE) as f:
+            return set(json.load(f))
     except Exception:
         return set()
 
 
 def save_seen(seen):
-    json.dump(list(seen), open(SEEN_FILE, "w"))
+    try:
+        with open(SEEN_FILE, "w") as f:
+            json.dump(list(seen), f)
+    except Exception as e:
+        print(f"  save_seen error: {e}")
 
 
 def scan_rss_feeds():

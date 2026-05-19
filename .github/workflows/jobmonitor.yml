@@ -1,0 +1,238 @@
+name: EU Insurance Remote Job Monitor v2
+
+on:
+  pull_request:
+  schedule:
+    - cron: '0 7 * * *'           # 8 AM CET daily
+    - cron: '0 8 * * 1'           # 9 AM CET Monday digest
+  workflow_dispatch:
+    inputs:
+      job_type:
+        description: 'Which job to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - check-jobs
+          - scan-companies
+          - scan-coverholds
+          - weekly-digest
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+
+
+  pr-validation:
+    name: 🧪 PR Workflow Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate workflow and script syntax
+        run: |
+          python -m py_compile job_hunter.py company_scanner.py coverholder_scanner.py weekly_digest.py
+  check-jobs:
+    name: 📊 Daily Job Scanner
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'check-jobs'))
+      || (github.event_name == 'schedule' && github.event.schedule == '0 7 * * *')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Initialize tracker with correct header
+        run: |
+          [ -f seen_jobs.json ] || echo "[]" > seen_jobs.json
+          [ -f job_tracker.csv ] || echo "Date,Title,Company,Source,Score,Location,Salary,Reason,Link,Status" > job_tracker.csv
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Python dependencies
+        run: pip install requests
+      - name: Restore seen jobs cache
+        uses: actions/cache/restore@v4
+        with:
+          path: seen_jobs.json
+          key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: seen-jobs-${{ runner.os }}-
+      - name: Restore job tracker cache
+        uses: actions/cache/restore@v4
+        with:
+          path: job_tracker.csv
+          key: tracker-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: tracker-${{ runner.os }}-
+      - name: Verify email credentials
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
+            echo "❌ GMAIL_USER or GMAIL_APP_PASSWORD secret is not configured."
+            echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
+            exit 1
+          fi
+          echo "✅ Email credentials present for: $GMAIL_USER"
+      - name: Run job hunter
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: python job_hunter.py
+      - name: Save seen jobs cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: seen_jobs.json
+          key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
+      - name: Save job tracker cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: job_tracker.csv
+          key: tracker-${{ runner.os }}-${{ github.run_id }}
+
+  scan-companies:
+    name: 📰 Insurtech News Scanner
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'scan-companies'))
+      || (github.event_name == 'schedule' && github.event.schedule == '0 7 * * *')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Initialize cache
+        run: |
+          [ -f seen_companies.json ] || echo "[]" > seen_companies.json
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Restore seen companies cache
+        uses: actions/cache/restore@v4
+        with:
+          path: seen_companies.json
+          key: companies-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: companies-${{ runner.os }}-
+      - name: Verify email credentials
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
+            echo "❌ GMAIL_USER or GMAIL_APP_PASSWORD secret is not configured."
+            echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
+            exit 1
+          fi
+          echo "✅ Email credentials present for: $GMAIL_USER"
+      - name: Run company scanner
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python company_scanner.py
+      - name: Save seen companies cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: seen_companies.json
+          key: companies-${{ runner.os }}-${{ github.run_id }}
+
+  scan-coverholds:
+    name: 🏛️ Lloyd's Coverholder EU Scanner
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'scan-coverholds'))
+      || (github.event_name == 'schedule' && github.event.schedule == '0 7 * * *')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Initialize cache
+        run: |
+          [ -f seen_coverholders.json ] || echo "[]" > seen_coverholders.json
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Restore seen coverholders cache
+        uses: actions/cache/restore@v4
+        with:
+          path: seen_coverholders.json
+          key: coverholders-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: coverholders-${{ runner.os }}-
+      - name: Verify email credentials
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
+            echo "❌ GMAIL_USER or GMAIL_APP_PASSWORD secret is not configured."
+            echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
+            exit 1
+          fi
+          echo "✅ Email credentials present for: $GMAIL_USER"
+      - name: Run coverholder scanner
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python coverholder_scanner.py
+      - name: Save seen coverholders cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: seen_coverholders.json
+          key: coverholders-${{ runner.os }}-${{ github.run_id }}
+
+  weekly-digest:
+    name: 📋 Weekly Digest
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.job_type == 'all' || github.event.inputs.job_type == 'weekly-digest'))
+      || (github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1')
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Initialize tracker
+        run: |
+          [ -f job_tracker.csv ] || echo "Date,Title,Company,Source,Score,Location,Salary,Reason,Link,Status" > job_tracker.csv
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Restore job tracker cache
+        uses: actions/cache/restore@v4
+        with:
+          path: job_tracker.csv
+          key: tracker-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: tracker-${{ runner.os }}-
+      - name: Verify email credentials
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
+            echo "❌ GMAIL_USER or GMAIL_APP_PASSWORD secret is not configured."
+            echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
+            exit 1
+          fi
+          echo "✅ Email credentials present for: $GMAIL_USER"
+      - name: Send weekly digest
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python weekly_digest.py

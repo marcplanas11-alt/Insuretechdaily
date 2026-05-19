@@ -43,10 +43,14 @@ def send_digest(all_rows):
     pending = [r for r in all_rows if r.get("Status", "") == "New"]
 
     # Top matches table
-    top_matches = sorted(this_week, key=lambda x: int(x.get("Score", "0") or "0"), reverse=True)[:10]
+    def _safe_score(r):
+        s = r.get("Score", "0") or "0"
+        return int(s) if s.isdigit() else 0
+
+    top_matches = sorted(this_week, key=_safe_score, reverse=True)[:10]
     rows_html = ""
     for r in top_matches:
-        s = int(r.get("Score", "0") or "0")
+        s = _safe_score(r)
         color = "#16a34a" if s >= 85 else "#2563eb" if s >= 75 else "#d97706"
         rows_html += f"""<tr>
   <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;">{r.get('Date','')}</td>
