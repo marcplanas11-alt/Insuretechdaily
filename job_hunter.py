@@ -77,6 +77,9 @@ ASHBY_COMPANIES = [
     {"name": "Drivit",                 "client": "drivit"},
     {"name": "Qover",                  "client": "qover"},
     {"name": "InMyBag",                "client": "inmybag"},
+    # EU AI companies (expanded scope — remote + Barcelona hybrid)
+    {"name": "Together AI",            "client": "togetherai"},
+    {"name": "HuggingFace",            "client": "huggingface"},
 ]
 
 # Greenhouse ATS companies
@@ -90,6 +93,8 @@ GREENHOUSE_COMPANIES = [
     {"name": "Concirrus",          "client": "concirrus"},
     {"name": "Coalition",          "client": "coalitioninc"},
     {"name": "At-Bay",             "client": "atbay"},
+    # EU AI governance and compliance
+    {"name": "Responsible AI Institute", "client": "responsibleai"},
 ]
 
 # Lever ATS companies
@@ -100,6 +105,7 @@ LEVER_COMPANIES = [
     {"name": "Laka",         "client": "laka"},
     {"name": "Flock",        "client": "flock"},
     {"name": "Embroker",     "client": "embroker"},
+    {"name": "Mistral AI",   "client": "mistral"},
 ]
 
 # Direct career page checks (companies without standard ATS APIs)
@@ -137,6 +143,10 @@ CAREER_PAGES += [
     {"name": "Embat", "url": "https://www.embat.com/careers"},
     {"name": "Shift Technology", "url": "https://www.shift-technology.com/careers"},
     {"name": "Concirrus (InsurTech AI)", "url": "https://www.concirrus.com/careers"},
+    # EU AI companies (expanded scope)
+    {"name": "Mistral AI", "url": "https://mistral.ai/careers/"},
+    {"name": "HuggingFace", "url": "https://huggingface.co/join"},
+    {"name": "Together AI", "url": "https://www.together.ai/careers"},
 ]
 # Remotive API — working JSON API for remote jobs
 REMOTIVE_CATEGORIES = [
@@ -161,24 +171,34 @@ ADZUNA_APP_ID  = os.environ.get("ADZUNA_APP_ID", "")
 ADZUNA_APP_KEY = os.environ.get("ADZUNA_APP_KEY", "")
 
 ADZUNA_SEARCHES = [
-    # Operations roles
+    # Operations roles (core)
     {"country": "gb", "keywords": "insurance operations manager remote"},
     {"country": "gb", "keywords": "underwriting operations remote"},
     {"country": "gb", "keywords": "insurtech operations remote"},
-    # Business Analysis
+    # Business Analysis (expanded scope)
     {"country": "gb", "keywords": "business analyst insurtech remote"},
     {"country": "gb", "keywords": "business analyst fintech remote"},
-    # AI Product / Engineering
+    {"country": "gb", "keywords": "business analyst digital transformation remote"},
+    {"country": "gb", "keywords": "digital transformation analyst remote"},
+    {"country": "gb", "keywords": "IT business analyst remote"},
+    # AI Product / Engineering (expanded)
     {"country": "gb", "keywords": "AI product engineer insurance remote"},
     {"country": "gb", "keywords": "AI engineer finance insurance remote"},
     {"country": "gb", "keywords": "machine learning engineer insurance remote"},
     {"country": "gb", "keywords": "AI implementation specialist insurance"},
+    {"country": "gb", "keywords": "AI engineer remote EU"},
+    {"country": "gb", "keywords": "AI governance compliance remote"},
+    {"country": "gb", "keywords": "LLM engineer remote EU"},
+    # EU country searches (expanded)
     {"country": "de", "keywords": "AI engineer insurance remote"},
-    # EU country searches
     {"country": "de", "keywords": "insurance operations remote"},
+    {"country": "de", "keywords": "digital transformation remote"},
     {"country": "fr", "keywords": "insurance operations remote"},
+    {"country": "fr", "keywords": "digital transformation remote"},
     {"country": "es", "keywords": "insurance operations remote"},
+    {"country": "es", "keywords": "business analyst remote"},
     {"country": "nl", "keywords": "insurance operations remote"},
+    {"country": "nl", "keywords": "AI engineer remote"},
 ]
 
 # ═════════════════════════════════════════════════════════════
@@ -211,7 +231,8 @@ def save_seen(seen):
         print(f"    save_seen error: {e}")
 
 def is_insurance_relevant(text):
-    """Check if job contains insurance/fintech domain OR AI + finance/insurance domain."""
+    """Check if job is relevant: insurance/fintech domain OR AI/digital transformation OR governance/compliance."""
+    import re
     t = text.lower()
 
     # Traditional insurance/fintech keywords
@@ -220,36 +241,52 @@ def is_insurance_relevant(text):
                        "broker", "solvency", "dua", "delegated underwriting",
                        "fintech", "financial services", "insuretechdaily"]
 
-    # Business analysis at insurance/fintech
-    ba_insurance = ["business analyst", "process analyst", "operational analyst",
-                    "digital transformation", "business analysis"]
+    # Business analysis & digital transformation (broader scope)
+    ba_transformation = ["business analyst", "process analyst", "operational analyst",
+                         "digital transformation", "business analysis",
+                         "digital transformation analyst", "it business analyst",
+                         "transformation analyst", "requirements analyst"]
 
-    # AI/automation keywords (tool-specific + engineering roles)
+    # AI/automation keywords (tool-specific + engineering roles + operations AI)
     ai_automation = ["claude api", "langchain", "langgraph", "crewai",
                      "prompt engineer", "llm", "generative ai",
                      "ai agent", "ai implementation", "ai automation", "rag", "mcp",
                      "ai-powered", "ai-enabled", "ai engineer", "ai software engineer",
                      "machine learning engineer", "llm engineer", "ai solutions engineer",
-                     "conversational ai", "ai platform", "ai developer"]
+                     "conversational ai", "ai platform", "ai developer", "ai operations"]
 
-    # Domain context for AI roles (STRICT: insurance/finance specific)
-    finance_insurance_domain = [
+    # AI governance & compliance (use word boundaries for acronyms to avoid false matches)
+    ai_governance_patterns = [
+        r"\bai\s+governance\b", r"\bai\s+compliance\b", r"\bai\s+risk\b", r"\bai\s+regulation\b",
+        r"\bresponsible\s+ai\b", r"\bai\s+ethics\b", r"\bdora\b", r"\beu\s+ai\s+act\b",
+        r"\bai\s+policy\b", r"\bai\s+audit\b"
+    ]
+
+    # Domain context for AI roles (broader: operations, finance, automation, governance)
+    finance_ops_automation = [
         "claims automation", "underwriting automation", "claims processing",
         "insurance automation", "operations ai", "fintech",
         "treasury operations", "finance operations", "financial automation",
         "insurance operations", "reinsurance", "policy management", "bordereaux",
-        "financial services"
+        "financial services", "operations automation", "workflow automation",
+        "process automation", "intelligent automation", "automation engineer"
     ]
 
     has_insurance = any(kw in t for kw in strong_insurance)
-    has_ba = any(kw in t for kw in ba_insurance)
+    has_ba = any(kw in t for kw in ba_transformation)
     has_ai = any(kw in t for kw in ai_automation)
-    has_finance_insurance = any(kw in t for kw in finance_insurance_domain)
+    has_governance = any(re.search(pattern, t) for pattern in ai_governance_patterns)
+    has_finance_ops = any(kw in t for kw in finance_ops_automation)
 
-    # Accept: traditional insurance/fintech (includes BA at those companies)
-    # OR: BA keyword + insurance/fintech domain
-    # OR: AI tools + finance/insurance domain
-    return has_insurance or (has_ba and has_finance_insurance) or (has_ai and has_finance_insurance)
+    # Accept:
+    # 1. Traditional insurance/fintech
+    # 2. BA/transformation + (insurance/fintech OR finance/ops/automation domain)
+    # 3. AI/governance roles + (finance/ops/automation domain)
+    # 4. Pure AI governance/compliance roles (broad scope)
+    return (has_insurance or
+            (has_ba and (has_insurance or has_finance_ops)) or
+            (has_ai and has_finance_ops) or
+            has_governance)
 
 def is_eu_eligible(location_text, description_text=""):
     """Check if role is remote EU or Barcelona-based. Hard-rejects US-only roles."""
