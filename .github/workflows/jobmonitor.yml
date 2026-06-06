@@ -70,17 +70,17 @@ jobs:
           path: job_tracker.csv
           key: tracker-${{ runner.os }}-${{ github.run_id }}
           restore-keys: tracker-${{ runner.os }}-
-      - name: Verify email credentials
+      - name: Check optional credentials
         env:
           GMAIL_USER: ${{ secrets.SMTP_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
         run: |
-          if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
-            echo "❌ SMTP_USER or SMTP_PASS secret is not configured."
-            echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
-            exit 1
-          fi
-          echo "✅ Email credentials present for: $GMAIL_USER"
+          [ -n "$GMAIL_USER" ] && [ -n "$GMAIL_APP_PASSWORD" ] && echo "✅ Email credentials present" || echo "⚠️ Email credentials missing: scan will run, but email sending will be skipped."
+          [ -n "$ANTHROPIC_API_KEY" ] && echo "✅ Anthropic key present" || echo "⚠️ Anthropic key missing: AI scoring will return 0 until configured."
+          [ -n "$ADZUNA_APP_ID" ] && [ -n "$ADZUNA_APP_KEY" ] && echo "✅ Adzuna credentials present" || echo "⚠️ Adzuna credentials missing: Adzuna search will be skipped."
       - name: Run job hunter
         env:
           GMAIL_USER: ${{ secrets.SMTP_USER }}
@@ -92,12 +92,14 @@ jobs:
       - name: Save seen jobs cache
         uses: actions/cache/save@v4
         if: always()
+        continue-on-error: true
         with:
           path: seen_jobs.json
           key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
       - name: Save job tracker cache
         uses: actions/cache/save@v4
         if: always()
+        continue-on-error: true
         with:
           path: job_tracker.csv
           key: tracker-${{ runner.os }}-${{ github.run_id }}
@@ -126,17 +128,12 @@ jobs:
           path: seen_companies.json
           key: companies-${{ runner.os }}-${{ github.run_id }}
           restore-keys: companies-${{ runner.os }}-
-      - name: Verify email credentials
+      - name: Check optional email credentials
         env:
           GMAIL_USER: ${{ secrets.SMTP_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: |
-          if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
-            echo "❌ SMTP_USER or SMTP_PASS secret is not configured."
-            echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
-            exit 1
-          fi
-          echo "✅ Email credentials present for: $GMAIL_USER"
+          [ -n "$GMAIL_USER" ] && [ -n "$GMAIL_APP_PASSWORD" ] && echo "✅ Email credentials present" || echo "⚠️ Email credentials missing: scanner will run, but email sending may be skipped."
       - name: Run company scanner
         env:
           GMAIL_USER: ${{ secrets.SMTP_USER }}
@@ -145,6 +142,7 @@ jobs:
       - name: Save seen companies cache
         uses: actions/cache/save@v4
         if: always()
+        continue-on-error: true
         with:
           path: seen_companies.json
           key: companies-${{ runner.os }}-${{ github.run_id }}
@@ -173,17 +171,12 @@ jobs:
           path: seen_coverholders.json
           key: coverholders-${{ runner.os }}-${{ github.run_id }}
           restore-keys: coverholders-${{ runner.os }}-
-      - name: Verify email credentials
+      - name: Check optional email credentials
         env:
           GMAIL_USER: ${{ secrets.SMTP_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: |
-          if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
-            echo "❌ SMTP_USER or SMTP_PASS secret is not configured."
-            echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
-            exit 1
-          fi
-          echo "✅ Email credentials present for: $GMAIL_USER"
+          [ -n "$GMAIL_USER" ] && [ -n "$GMAIL_APP_PASSWORD" ] && echo "✅ Email credentials present" || echo "⚠️ Email credentials missing: scanner will run, but email sending may be skipped."
       - name: Run coverholder scanner
         env:
           GMAIL_USER: ${{ secrets.SMTP_USER }}
@@ -192,6 +185,7 @@ jobs:
       - name: Save seen coverholders cache
         uses: actions/cache/save@v4
         if: always()
+        continue-on-error: true
         with:
           path: seen_coverholders.json
           key: coverholders-${{ runner.os }}-${{ github.run_id }}
@@ -220,17 +214,12 @@ jobs:
           path: job_tracker.csv
           key: tracker-${{ runner.os }}-${{ github.run_id }}
           restore-keys: tracker-${{ runner.os }}-
-      - name: Verify email credentials
+      - name: Check optional email credentials
         env:
           GMAIL_USER: ${{ secrets.SMTP_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: |
-          if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
-            echo "❌ SMTP_USER or SMTP_PASS secret is not configured."
-            echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
-            exit 1
-          fi
-          echo "✅ Email credentials present for: $GMAIL_USER"
+          [ -n "$GMAIL_USER" ] && [ -n "$GMAIL_APP_PASSWORD" ] && echo "✅ Email credentials present" || echo "⚠️ Email credentials missing: weekly digest may skip email sending."
       - name: Send weekly digest
         env:
           GMAIL_USER: ${{ secrets.SMTP_USER }}
