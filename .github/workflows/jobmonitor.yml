@@ -55,19 +55,19 @@ jobs:
           restore-keys: tracker-${{ runner.os }}-
       - name: Verify email credentials
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.SMTP_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: |
           if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
-            echo "❌ GMAIL_USER or GMAIL_APP_PASSWORD secret is not configured."
+            echo "❌ SMTP_USER or SMTP_PASS secret is not configured."
             echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
             exit 1
           fi
           echo "✅ Email credentials present for: $GMAIL_USER"
       - name: Run job hunter
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.SMTP_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
@@ -111,19 +111,19 @@ jobs:
           restore-keys: companies-${{ runner.os }}-
       - name: Verify email credentials
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.SMTP_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: |
           if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
-            echo "❌ GMAIL_USER or GMAIL_APP_PASSWORD secret is not configured."
+            echo "❌ SMTP_USER or SMTP_PASS secret is not configured."
             echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
             exit 1
           fi
           echo "✅ Email credentials present for: $GMAIL_USER"
       - name: Run company scanner
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.SMTP_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: python company_scanner.py
       - name: Save seen companies cache
         uses: actions/cache/save@v4
@@ -158,19 +158,19 @@ jobs:
           restore-keys: coverholders-${{ runner.os }}-
       - name: Verify email credentials
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.SMTP_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: |
           if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
-            echo "❌ GMAIL_USER or GMAIL_APP_PASSWORD secret is not configured."
+            echo "❌ SMTP_USER or SMTP_PASS secret is not configured."
             echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
             exit 1
           fi
           echo "✅ Email credentials present for: $GMAIL_USER"
       - name: Run coverholder scanner
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.SMTP_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: python coverholder_scanner.py
       - name: Save seen coverholders cache
         uses: actions/cache/save@v4
@@ -205,17 +205,17 @@ jobs:
           restore-keys: tracker-${{ runner.os }}-
       - name: Verify email credentials
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.SMTP_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: |
           if [ -z "$GMAIL_USER" ] || [ -z "$GMAIL_APP_PASSWORD" ]; then
-            echo "❌ GMAIL_USER or GMAIL_APP_PASSWORD secret is not configured."
+            echo "❌ SMTP_USER or SMTP_PASS secret is not configured."
             echo "Go to repo Settings > Secrets and variables > Actions and add both secrets."
             exit 1
           fi
           echo "✅ Email credentials present for: $GMAIL_USER"
       - name: Send weekly digest
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_USER: ${{ secrets.SMTP_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
         run: python weekly_digest.py
