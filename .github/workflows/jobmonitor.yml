@@ -23,8 +23,6 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-
-
   pr-validation:
     name: 🧪 PR Workflow Validation
     runs-on: ubuntu-latest
@@ -39,6 +37,7 @@ jobs:
       - name: Validate workflow and script syntax
         run: |
           python -m py_compile job_hunter.py company_scanner.py coverholder_scanner.py weekly_digest.py
+
   check-jobs:
     name: 📊 Daily Job Scanner
     runs-on: ubuntu-latest
@@ -60,35 +59,41 @@ jobs:
         run: pip install requests
       - name: Restore seen jobs cache
         uses: actions/cache/restore@v4
+        continue-on-error: true
         with:
           path: seen_jobs.json
           key: seen-jobs-${{ runner.os }}-${{ github.run_id }}
           restore-keys: seen-jobs-${{ runner.os }}-
       - name: Restore job tracker cache
         uses: actions/cache/restore@v4
+        continue-on-error: true
         with:
           path: job_tracker.csv
           key: tracker-${{ runner.os }}-${{ github.run_id }}
           restore-keys: tracker-${{ runner.os }}-
       - name: Check optional credentials
         env:
-          GMAIL_USER: ${{ secrets.SMTP_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
+          GMAIL_USER: ${{ secrets.SMTP_USER || secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS || secrets.GMAIL_APP_PASSWORD }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
         run: |
           [ -n "$GMAIL_USER" ] && [ -n "$GMAIL_APP_PASSWORD" ] && echo "✅ Email credentials present" || echo "⚠️ Email credentials missing: scan will run, but email sending will be skipped."
-          [ -n "$ANTHROPIC_API_KEY" ] && echo "✅ Anthropic key present" || echo "⚠️ Anthropic key missing: AI scoring will return 0 until configured."
+          [ -n "$ANTHROPIC_API_KEY" ] && echo "✅ Anthropic key present" || echo "⚠️ Anthropic key missing: deterministic scoring fallback will be used."
           [ -n "$ADZUNA_APP_ID" ] && [ -n "$ADZUNA_APP_KEY" ] && echo "✅ Adzuna credentials present" || echo "⚠️ Adzuna credentials missing: Adzuna search will be skipped."
       - name: Run job hunter
         env:
-          GMAIL_USER: ${{ secrets.SMTP_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
+          GMAIL_USER: ${{ secrets.SMTP_USER || secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS || secrets.GMAIL_APP_PASSWORD }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
-        run: python job_hunter.py
+        run: |
+          python job_hunter.py || {
+            echo "::warning::job_hunter.py failed. Scheduled workflow will continue; inspect this step log for the Python traceback."
+            exit 0
+          }
       - name: Save seen jobs cache
         uses: actions/cache/save@v4
         if: always()
@@ -124,21 +129,26 @@ jobs:
         run: pip install requests
       - name: Restore seen companies cache
         uses: actions/cache/restore@v4
+        continue-on-error: true
         with:
           path: seen_companies.json
           key: companies-${{ runner.os }}-${{ github.run_id }}
           restore-keys: companies-${{ runner.os }}-
       - name: Check optional email credentials
         env:
-          GMAIL_USER: ${{ secrets.SMTP_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
+          GMAIL_USER: ${{ secrets.SMTP_USER || secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS || secrets.GMAIL_APP_PASSWORD }}
         run: |
           [ -n "$GMAIL_USER" ] && [ -n "$GMAIL_APP_PASSWORD" ] && echo "✅ Email credentials present" || echo "⚠️ Email credentials missing: scanner will run, but email sending may be skipped."
       - name: Run company scanner
         env:
-          GMAIL_USER: ${{ secrets.SMTP_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
-        run: python company_scanner.py
+          GMAIL_USER: ${{ secrets.SMTP_USER || secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS || secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python company_scanner.py || {
+            echo "::warning::company_scanner.py failed. Scheduled workflow will continue; inspect this step log for the Python traceback."
+            exit 0
+          }
       - name: Save seen companies cache
         uses: actions/cache/save@v4
         if: always()
@@ -167,21 +177,26 @@ jobs:
         run: pip install requests
       - name: Restore seen coverholders cache
         uses: actions/cache/restore@v4
+        continue-on-error: true
         with:
           path: seen_coverholders.json
           key: coverholders-${{ runner.os }}-${{ github.run_id }}
           restore-keys: coverholders-${{ runner.os }}-
       - name: Check optional email credentials
         env:
-          GMAIL_USER: ${{ secrets.SMTP_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
+          GMAIL_USER: ${{ secrets.SMTP_USER || secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS || secrets.GMAIL_APP_PASSWORD }}
         run: |
           [ -n "$GMAIL_USER" ] && [ -n "$GMAIL_APP_PASSWORD" ] && echo "✅ Email credentials present" || echo "⚠️ Email credentials missing: scanner will run, but email sending may be skipped."
       - name: Run coverholder scanner
         env:
-          GMAIL_USER: ${{ secrets.SMTP_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
-        run: python coverholder_scanner.py
+          GMAIL_USER: ${{ secrets.SMTP_USER || secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS || secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python coverholder_scanner.py || {
+            echo "::warning::coverholder_scanner.py failed. Scheduled workflow will continue; inspect this step log for the Python traceback."
+            exit 0
+          }
       - name: Save seen coverholders cache
         uses: actions/cache/save@v4
         if: always()
@@ -210,18 +225,23 @@ jobs:
         run: pip install requests
       - name: Restore job tracker cache
         uses: actions/cache/restore@v4
+        continue-on-error: true
         with:
           path: job_tracker.csv
           key: tracker-${{ runner.os }}-${{ github.run_id }}
           restore-keys: tracker-${{ runner.os }}-
       - name: Check optional email credentials
         env:
-          GMAIL_USER: ${{ secrets.SMTP_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
+          GMAIL_USER: ${{ secrets.SMTP_USER || secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS || secrets.GMAIL_APP_PASSWORD }}
         run: |
           [ -n "$GMAIL_USER" ] && [ -n "$GMAIL_APP_PASSWORD" ] && echo "✅ Email credentials present" || echo "⚠️ Email credentials missing: weekly digest may skip email sending."
       - name: Send weekly digest
         env:
-          GMAIL_USER: ${{ secrets.SMTP_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS }}
-        run: python weekly_digest.py
+          GMAIL_USER: ${{ secrets.SMTP_USER || secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.SMTP_PASS || secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python weekly_digest.py || {
+            echo "::warning::weekly_digest.py failed. Scheduled workflow will continue; inspect this step log for the Python traceback."
+            exit 0
+          }
