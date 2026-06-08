@@ -1,18 +1,24 @@
 """
-EU Insurance Remote Job Monitor v5 — Marc Planas Callico
+EU Insurance Remote Job Monitor v5.1 — Marc Planas
 
-Resolved conflict version.
+Search scope:
+- Track A: Insurance operations / claims / underwriting / reinsurance / Guidewire / MGA / coverholder roles
+- Track B: Business Analyst / Digital Transformation / Process Analyst / Implementation Consultant roles
+- Track C: AI Consultant / AI Automation / AI Implementation roles where insurance, finance, operations or governance context is useful
 
-Tracks:
-A — Insurance Ops / Guidewire / Claims / Underwriting / Reinsurance
-B — Business Analyst / Digital Transformation / Implementation Consultant
-C — AI Consultant / AI Automation / AI Product / Digital Workforce
+v5.1 tuning:
+- Keeps Madrid presencial as a hard blocker.
+- Keeps US-only as a hard blocker.
+- Accepts 100% remote EU / EMEA / Europe roles.
+- Accepts European relocation / hybrid for strong BA, transformation and consulting roles.
+- Gives extra weight to BA, transformation consultant, insurance consultant and AI automation consultant roles.
+- Penalizes pure AI Engineer / LLM Engineer roles when they lack consulting, operations, insurance, finance or governance context.
+- Uses €45K as the explicit salary floor, while keeping roles with undisclosed salary.
 
-Design goals:
-- Keep the expanded search scope from main.
-- Keep the triple-track evaluation idea from claude/update-job-search-prompt-mieHz.
-- Do not fail GitHub Actions when optional secrets are missing.
-- Use deterministic scoring as fallback when Anthropic is not configured or unavailable.
+The script is intentionally resilient in GitHub Actions:
+- Missing email secrets do not crash the scan; email is skipped.
+- Missing Anthropic key does not crash the scan; deterministic scoring is used.
+- Missing Adzuna keys do not crash the scan; Adzuna is skipped.
 """
 
 import csv
@@ -34,13 +40,13 @@ try:
     from marc_profile import PROFILE
 except Exception:
     PROFILE = {
-        "name": "Marc Planas Callico",
+        "name": "Marc Planas",
         "location": "Barcelona, Spain",
-        "min_match_score": 70,
+        "min_match_score": 50,
         "min_salary_eur": 45000,
         "target_roles": [],
         "target_company_types": [],
-        "experience_summary": "Senior insurance operations, Guidewire, BA and AI-enabled transformation profile.",
+        "experience_summary": "Senior insurance operations, BA/digital transformation and AI-enabled transformation profile.",
     }
 
 TODAY = datetime.now().strftime("%Y-%m-%d")
@@ -53,18 +59,34 @@ GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 ADZUNA_APP_ID = os.environ.get("ADZUNA_APP_ID", "")
 ADZUNA_APP_KEY = os.environ.get("ADZUNA_APP_KEY", "")
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; EUInsuranceJobMonitor/5.0)"}
+MIN_SALARY_EUR = int(PROFILE.get("min_salary_eur", 45000))
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; EUInsuranceJobMonitor/5.1)"}
 
 EU_CITIES = [
-    "barcelona", "madrid", "valencia", "lisbon", "paris", "london", "dublin",
+    "barcelona", "valencia", "lisbon", "porto", "paris", "london", "dublin",
     "amsterdam", "brussels", "berlin", "munich", "frankfurt", "hamburg",
     "zurich", "geneva", "vienna", "milan", "rome", "stockholm", "copenhagen",
-    "warsaw", "prague", "luxembourg", "remote europe", "europe", "emea",
+    "oslo", "helsinki", "warsaw", "prague", "luxembourg", "rotterdam", "utrecht",
+]
+
+EU_REGION_KEYWORDS = [
+    "europe", "european union", "eu", "emea", "eea", "remote europe", "remote eu",
+    "remote emea", "europe remote", "emea remote", "eu remote", "within europe",
 ]
 
 EU_REMOTE_KEYWORDS = [
-    "remote", "fully remote", "remote eu", "remote europe", "remote emea",
-    "europe remote", "emea remote", "work from anywhere", "distributed",
+    "remote", "fully remote", "100% remote", "remote-first", "distributed",
+    "work from anywhere", "work from home", "home based", "home-based",
+] + EU_REGION_KEYWORDS
+
+RELOCATION_KEYWORDS = [
+    "relocation", "relocate", "visa sponsorship", "sponsorship available",
+    "hybrid", "on-site", "onsite", "office-based", "office based",
+]
+
+MADRID_HARD_BLOCKERS = [
+    "madrid presencial", "presencial madrid", "onsite madrid", "on-site madrid",
+    "madrid onsite", "madrid office", "oficina madrid", "híbrido madrid", "hybrid madrid",
 ]
 
 US_ONLY_PATTERNS = [
@@ -74,58 +96,71 @@ US_ONLY_PATTERNS = [
     "must be legally authorized to work in the united states",
 ]
 
-NEGATIVE_ROLE_KEYWORDS = [
-    "intern", "internship", "graduate", "junior", "student",
-    "sales development representative", "sdr", "account executive", "pure sales",
-    "actuarial intern", "data scientist research", "research scientist",
-]
-
-TRACK_KEYWORDS = {
-    "A": {
-        "label": "Insurance Ops / Guidewire / Claims / Underwriting",
-        "keywords": [
-            "insurance operations", "insurance ops", "underwriting operations", "underwriting ops",
-            "claims operations", "claims manager", "claims specialist", "claims analyst",
-            "claims transformation", "claims automation", "policy operations", "broker operations",
-            "delegated authority", "delegated underwriting", "dua", "bordereaux", "mga",
-            "coverholder", "lloyd's", "reinsurance operations", "reinsurance analyst",
-            "technical accounting", "premium bordereaux", "programme manager", "program manager",
-            "operations manager", "process owner", "guidewire", "policycenter", "claimcenter",
-            "billingcenter", "duck creek", "fineos", "sapiens", "policy administration",
-            "insurance platform", "core insurance system",
-        ],
-    },
-    "B": {
-        "label": "BA / Digital Transformation / Implementation",
-        "keywords": [
-            "business analyst", "senior business analyst", "it business analyst",
-            "technical business analyst", "digital transformation", "transformation consultant",
-            "business transformation", "process analyst", "business process analyst",
-            "requirements analyst", "requirements elicitation", "user stories", "bpmn",
-            "gap analysis", "stakeholder management", "process mapping", "product owner",
-            "change analyst", "implementation consultant", "solution consultant",
-            "functional consultant", "insurance consultant", "financial services consultant",
-        ],
-    },
-    "C": {
-        "label": "AI Consultant / AI Automation / Digital Workforce",
-        "keywords": [
-            "ai consultant", "ai automation consultant", "automation consultant",
-            "intelligent automation", "ai implementation", "ai implementation specialist",
-            "ai solutions consultant", "ai solutions engineer", "ai product consultant",
-            "ai product engineer", "digital workforce", "agentic", "ai agent", "agent orchestration",
-            "llm", "generative ai", "genai", "rag", "mcp", "claude api", "langchain",
-            "langgraph", "crewai", "workflow automation", "process automation",
-            "operations automation", "ai governance", "responsible ai", "eu ai act", "dora",
-            "ai risk", "ai compliance",
-        ],
-    },
+TARGET_KEYWORD_GROUPS = {
+    "insurance_ops": [
+        "insurance operations", "insurance ops", "underwriting operations", "underwriting ops",
+        "claims operations", "claims manager", "claims specialist", "claims analyst",
+        "claims transformation", "claims automation", "policy operations", "broker operations",
+        "delegated authority", "dua", "bordereaux", "mga", "coverholder", "lloyd's",
+        "reinsurance operations", "reinsurance analyst", "technical accounting", "premium bordereaux",
+        "programme manager", "program manager", "operations manager", "process owner",
+    ],
+    "platforms": [
+        "guidewire", "policycenter", "claimcenter", "billingcenter", "duck creek", "fineos",
+        "sapiens", "insurance platform", "core insurance system", "policy administration",
+    ],
+    "ba_transformation": [
+        "business analyst", "senior business analyst", "it business analyst", "technical business analyst",
+        "digital transformation", "transformation consultant", "business transformation",
+        "process analyst", "business process analyst", "requirements analyst", "product owner",
+        "change analyst", "implementation consultant", "solution consultant", "functional consultant",
+        "insurance consultant", "financial services consultant", "business consultant", "process consultant",
+    ],
+    "ai_consulting": [
+        "ai consultant", "ai automation consultant", "automation consultant", "intelligent automation",
+        "ai implementation", "ai implementation consultant", "ai solutions consultant", "ai product consultant",
+        "agentic process automation", "digital workforce", "ai agent", "workflow automation",
+        "process automation", "operations automation", "ai governance", "responsible ai", "eu ai act",
+        "dora", "ai risk", "ai compliance",
+    ],
+    "domain": [
+        "insurance", "insurtech", "reinsurance", "underwriting", "claims", "broker", "fintech",
+        "financial services", "mga", "coverholder", "lloyd's", "risk", "compliance",
+    ],
 }
 
-DOMAIN_KEYWORDS = [
-    "insurance", "insurtech", "reinsurance", "underwriting", "claims", "broker",
-    "fintech", "financial services", "mga", "coverholder", "lloyd's", "risk",
-    "compliance", "regulatory", "banking", "payments", "wealth management",
+BONUS_KEYWORDS = {
+    "business analyst": 14,
+    "senior business analyst": 16,
+    "technical business analyst": 14,
+    "it business analyst": 12,
+    "transformation consultant": 14,
+    "digital transformation consultant": 16,
+    "insurance consultant": 14,
+    "financial services consultant": 10,
+    "implementation consultant": 10,
+    "ai automation consultant": 16,
+    "ai implementation consultant": 14,
+    "intelligent automation consultant": 14,
+    "guidewire business analyst": 18,
+    "guidewire consultant": 16,
+}
+
+PURE_AI_ENGINEERING_KEYWORDS = [
+    "ai engineer", "ai software engineer", "machine learning engineer", "ml engineer",
+    "llm engineer", "generative ai engineer", "ai platform engineer", "research scientist",
+    "deep learning engineer", "computer vision engineer", "nlp engineer",
+]
+
+CONSULTING_OR_DOMAIN_CONTEXT = [
+    "consultant", "consulting", "implementation", "business analyst", "transformation",
+    "operations", "workflow", "process", "insurance", "reinsurance", "claims", "underwriting",
+    "financial services", "fintech", "governance", "compliance", "risk", "client-facing",
+]
+
+NEGATIVE_ROLE_KEYWORDS = [
+    "intern", "internship", "graduate", "junior", "student", "sales development representative",
+    "sdr", "account executive", "pure sales", "actuarial intern", "field adjuster",
 ]
 
 ASHBY_COMPANIES = [
@@ -138,22 +173,13 @@ ASHBY_COMPANIES = [
     {"name": "Inaza", "client": "inaza"},
     {"name": "Marshmallow", "client": "marshmallow"},
     {"name": "Zego", "client": "zego"},
-    {"name": "Lassie", "client": "lassie"},
-    {"name": "YuLife", "client": "yulife"},
     {"name": "Qover", "client": "qover"},
     {"name": "Embat", "client": "embat"},
-    {"name": "Tractable", "client": "tractable"},
-    {"name": "Shift Technology", "client": "shifttechnology"},
-    {"name": "Hiscox", "client": "hiscox"},
-    {"name": "Cuvva", "client": "cuvva"},
-    {"name": "Nimbla", "client": "nimbla"},
-    {"name": "Optalitix", "client": "optalitix"},
     {"name": "Hugging Face", "client": "huggingface"},
 ]
 
 GREENHOUSE_COMPANIES = [
     {"name": "Shift Technology", "client": "shifttechnology"},
-    {"name": "Tractable", "client": "tractable"},
     {"name": "Guidewire", "client": "guidewire"},
     {"name": "Duck Creek", "client": "duckcreek"},
     {"name": "FINEOS", "client": "fineos"},
@@ -162,11 +188,6 @@ GREENHOUSE_COMPANIES = [
     {"name": "Concirrus", "client": "concirrus"},
     {"name": "Coalition", "client": "coalitioninc"},
     {"name": "At-Bay", "client": "atbay"},
-    {"name": "Branch Insurance", "client": "branchinsurance"},
-    {"name": "Hippo Insurance", "client": "hippoinsurance"},
-    {"name": "Openly", "client": "openly"},
-    {"name": "Palantir", "client": "palantir"},
-    {"name": "Weights & Biases", "client": "wandb"},
 ]
 
 LEVER_COMPANIES = [
@@ -175,24 +196,18 @@ LEVER_COMPANIES = [
     {"name": "Superscript", "client": "superscript"},
     {"name": "Laka", "client": "laka"},
     {"name": "Flock", "client": "flock"},
-    {"name": "Pie Insurance", "client": "pieinsurance"},
-    {"name": "At-Bay", "client": "atbay"},
     {"name": "Embroker", "client": "embroker"},
-    {"name": "Corvus Insurance", "client": "corvusinsurance"},
     {"name": "Mistral AI", "client": "mistral"},
 ]
 
 CAREER_PAGES = [
     {"name": "Accelerant", "url": "https://accelerant.ai/careers/"},
-    {"name": "Ledgebrook", "url": "https://www.ledgebrook.com/careers"},
     {"name": "Swiss Re", "url": "https://careers.swissre.com/search/?q=operations&locationsearch="},
     {"name": "Munich Re", "url": "https://careers.munichre.com/en/munichre/search"},
-    {"name": "Gen Re", "url": "https://www.genre.com/us/careers"},
     {"name": "SCOR", "url": "https://www.scor.com/en/careers"},
     {"name": "Hannover Re", "url": "https://www.hannover-re.com/careers"},
     {"name": "Novidea", "url": "https://www.novidea.com/careers"},
     {"name": "EIS Group", "url": "https://eisgroup.com/careers"},
-    {"name": "ELEMENT Insurance", "url": "https://www.element.in/en/careers"},
     {"name": "Synpulse", "url": "https://www.synpulse.com/careers/"},
     {"name": "Capco", "url": "https://www.capco.com/Careers"},
     {"name": "Capgemini Invent", "url": "https://www.capgemini.com/careers"},
@@ -203,12 +218,7 @@ CAREER_PAGES = [
     {"name": "Aon", "url": "https://www.aon.com/careers"},
     {"name": "Milliman", "url": "https://www.milliman.com/careers"},
     {"name": "Oliver Wyman", "url": "https://www.oliverwyman.com/careers"},
-    {"name": "FTI Consulting", "url": "https://www.fticonsulting.com/careers"},
     {"name": "Maisa", "url": "https://www.maisa.ai/careers"},
-    {"name": "Shift Technology", "url": "https://www.shift-technology.com/careers"},
-    {"name": "Concirrus", "url": "https://www.concirrus.com/careers"},
-    {"name": "Akur8", "url": "https://www.akur8.com/careers"},
-    {"name": "Bdeo", "url": "https://bdeo.io/en/careers/"},
 ]
 
 REMOTIVE_CATEGORIES = ["finance", "business", "all-others", "software-dev"]
@@ -223,37 +233,40 @@ WORKING_RSS = [
 
 ADZUNA_SEARCHES = [
     {"country": "gb", "keywords": "insurance operations manager remote"},
-    {"country": "gb", "keywords": "underwriting operations MGA remote"},
+    {"country": "gb", "keywords": "underwriting operations remote"},
     {"country": "gb", "keywords": "claims operations remote"},
     {"country": "gb", "keywords": "reinsurance operations remote"},
-    {"country": "gb", "keywords": "MGA operations manager remote"},
     {"country": "gb", "keywords": "Guidewire business analyst remote"},
     {"country": "gb", "keywords": "Guidewire consultant remote"},
     {"country": "gb", "keywords": "insurance programme manager remote"},
     {"country": "gb", "keywords": "bordereaux insurance remote"},
     {"country": "gb", "keywords": "delegated authority insurance remote"},
     {"country": "gb", "keywords": "business analyst insurance remote"},
+    {"country": "gb", "keywords": "senior business analyst insurance remote"},
+    {"country": "gb", "keywords": "technical business analyst insurance remote"},
     {"country": "gb", "keywords": "business analyst insurtech remote"},
+    {"country": "gb", "keywords": "business analyst fintech remote"},
     {"country": "gb", "keywords": "digital transformation insurance remote"},
-    {"country": "gb", "keywords": "insurance transformation consultant remote"},
+    {"country": "gb", "keywords": "transformation consultant insurance remote"},
+    {"country": "gb", "keywords": "insurance consultant business analyst remote"},
+    {"country": "gb", "keywords": "implementation consultant insurance remote"},
     {"country": "gb", "keywords": "process analyst insurance remote"},
     {"country": "gb", "keywords": "AI automation consultant remote"},
+    {"country": "gb", "keywords": "AI automation consultant insurance"},
     {"country": "gb", "keywords": "AI consultant insurance remote"},
-    {"country": "gb", "keywords": "AI implementation consultant financial services remote"},
+    {"country": "gb", "keywords": "AI implementation consultant remote"},
     {"country": "gb", "keywords": "intelligent automation consultant insurance"},
     {"country": "gb", "keywords": "AI governance financial services remote"},
-    {"country": "gb", "keywords": "LangGraph LangChain engineer insurance remote"},
-    {"country": "gb", "keywords": "digital workforce specialist AI agent remote"},
     {"country": "es", "keywords": "business analyst insurance remote"},
     {"country": "es", "keywords": "consultor inteligencia artificial seguros"},
     {"country": "es", "keywords": "consultor transformacion digital seguros"},
     {"country": "es", "keywords": "Guidewire insurance consultant"},
     {"country": "de", "keywords": "insurance business analyst remote"},
+    {"country": "de", "keywords": "transformation consultant insurance"},
     {"country": "de", "keywords": "insurance operations remote"},
     {"country": "fr", "keywords": "business analyst assurance remote"},
     {"country": "fr", "keywords": "consultant transformation assurance"},
     {"country": "nl", "keywords": "insurance business analyst remote"},
-    {"country": "nl", "keywords": "AI automation engineer financial services remote"},
 ]
 
 
@@ -277,8 +290,11 @@ def load_seen() -> set:
 
 
 def save_seen(seen: Iterable[str]) -> None:
-    with open(SEEN_FILE, "w", encoding="utf-8") as file:
-        json.dump(sorted(seen), file, indent=2)
+    try:
+        with open(SEEN_FILE, "w", encoding="utf-8") as file:
+            json.dump(sorted(seen), file, indent=2)
+    except Exception as exc:
+        print(f"  save_seen error: {exc}")
 
 
 def job_id(title: str, company: str, link: str = "") -> str:
@@ -291,57 +307,97 @@ def keyword_hits(text: str, keywords: Iterable[str]) -> List[str]:
     return [kw for kw in keywords if kw in lower]
 
 
+def has_any(text: str, keywords: Iterable[str]) -> bool:
+    lower = text.lower()
+    return any(kw in lower for kw in keywords)
+
+
+def is_ba_or_consulting_context(text: str) -> bool:
+    lower = text.lower()
+    return any(kw in lower for kw in TARGET_KEYWORD_GROUPS["ba_transformation"] + [
+        "consultant", "consulting", "transformation", "implementation", "business analyst",
+    ])
+
+
+def is_pure_ai_engineering(text: str) -> bool:
+    lower = text.lower()
+    has_pure_ai_title = any(kw in lower for kw in PURE_AI_ENGINEERING_KEYWORDS)
+    has_context = any(kw in lower for kw in CONSULTING_OR_DOMAIN_CONTEXT)
+    return has_pure_ai_title and not has_context
+
+
+def explicit_salary_below_floor(text: str) -> bool:
+    """Best-effort salary floor check. Only rejects explicit annual salary below MIN_SALARY_EUR."""
+    lower = text.lower().replace(",", "")
+    patterns = [
+        r"€\s?(\d{2,3})\s?k",
+        r"eur\s?(\d{2,3})\s?k",
+        r"(\d{2,3})\s?k\s?€",
+        r"(\d{5,6})\s?eur",
+        r"€\s?(\d{5,6})",
+    ]
+    values = []
+    for pattern in patterns:
+        for match in re.findall(pattern, lower):
+            value = int(match)
+            if value < 1000:
+                value *= 1000
+            values.append(value)
+    return bool(values) and max(values) < MIN_SALARY_EUR
+
+
 def is_eu_eligible(location_text: str, description_text: str = "") -> Tuple[bool, str]:
     loc = (location_text or "").lower()
     desc = (description_text or "").lower()
     combined = f"{loc} {desc}"
+
     if any(pattern in combined for pattern in US_ONLY_PATTERNS):
         return False, "us_only"
-    if any(keyword in combined for keyword in EU_REMOTE_KEYWORDS):
-        return True, "remote_eu_or_global"
+    if any(pattern in combined for pattern in MADRID_HARD_BLOCKERS):
+        return False, "madrid_presencial_blocked"
+    if "madrid" in loc and not any(remote in combined for remote in EU_REMOTE_KEYWORDS):
+        return False, "madrid_presencial_blocked"
+
+    if any(region in combined for region in EU_REGION_KEYWORDS) and any(remote in combined for remote in EU_REMOTE_KEYWORDS):
+        return True, "remote_eu_or_emea"
+    if any(remote in combined for remote in EU_REMOTE_KEYWORDS) and not any(pattern in combined for pattern in US_ONLY_PATTERNS):
+        return True, "remote_unspecified_or_global"
+    if "barcelona" in loc:
+        return True, "barcelona_hybrid_or_local"
     if any(city in loc for city in EU_CITIES):
+        if is_ba_or_consulting_context(combined) and any(word in combined for word in RELOCATION_KEYWORDS + ["consultant", "business analyst", "transformation"]):
+            return True, f"eu_relocation_or_hybrid_ba:{location_text}"
         return True, f"eu_location:{location_text}"
-    if not loc or loc in {"anywhere", "worldwide", "global"}:
-        return True, "remote_unspecified"
+    if not loc or loc in {"anywhere", "worldwide", "global", "remote"}:
+        return True, "remote_unspecified_or_global"
     return False, "not_eu"
-
-
-def classify_track(text: str) -> Tuple[str, List[str]]:
-    lower = text.lower()
-    scores = {}
-    hits_by_track = {}
-    for track, data in TRACK_KEYWORDS.items():
-        hits = keyword_hits(lower, data["keywords"])
-        scores[track] = len(hits)
-        hits_by_track[track] = hits
-
-    active_tracks = [track for track, count in scores.items() if count > 0]
-    if not active_tracks:
-        return "Unclear", []
-    if len(active_tracks) > 1:
-        ordered = sorted(active_tracks, key=lambda t: scores[t], reverse=True)
-        return "Mixed " + "+".join(ordered[:2]), hits_by_track[ordered[0]][:5]
-    track = active_tracks[0]
-    return track, hits_by_track[track][:5]
 
 
 def is_relevant(text: str) -> Tuple[bool, List[str]]:
     lower = text.lower()
     if any(negative in lower for negative in NEGATIVE_ROLE_KEYWORDS):
         return False, ["negative_role_keyword"]
+    if is_pure_ai_engineering(lower):
+        return False, ["pure_ai_engineering_without_domain_or_consulting_context"]
 
-    track, track_hits = classify_track(lower)
-    domain_hits = keyword_hits(lower, DOMAIN_KEYWORDS)
+    hits = []
+    groups_hit = set()
+    for group, keywords in TARGET_KEYWORD_GROUPS.items():
+        group_hits = keyword_hits(lower, keywords)
+        if group_hits:
+            groups_hit.add(group)
+            hits.extend(group_hits[:5])
 
-    if track == "A" or track.startswith("Mixed"):
-        return True, track_hits + domain_hits[:5]
-    if track == "B" and domain_hits:
-        return True, track_hits + domain_hits[:5]
-    if track == "C" and domain_hits:
-        return True, track_hits + domain_hits[:5]
+    if groups_hit & {"insurance_ops", "platforms"}:
+        return True, hits
+    if "ba_transformation" in groups_hit:
+        return True, hits
+    if "ai_consulting" in groups_hit and (groups_hit & {"domain", "insurance_ops", "platforms", "ba_transformation"}):
+        return True, hits
     if any(term in lower for term in ["ai governance", "responsible ai", "eu ai act", "ai compliance", "dora"]):
-        return True, track_hits + domain_hits[:5]
-    return False, track_hits + domain_hits[:5]
+        return True, hits
+
+    return False, hits
 
 
 def normalize_job(title: str, company: str, link: str, description: str, location: str, source: str, salary: str = "") -> Dict:
@@ -349,7 +405,7 @@ def normalize_job(title: str, company: str, link: str, description: str, locatio
         "title": title or "Untitled role",
         "company": company or "Unknown company",
         "link": link or "",
-        "description": (description or "")[:1000],
+        "description": (description or "")[:1200],
         "location": location or "Unspecified",
         "source": source,
         "salary": salary or "",
@@ -369,8 +425,9 @@ def scrape_ashby() -> List[Dict]:
                 title = item.get("title", "")
                 location = item.get("location", "")
                 description = item.get("descriptionPlain", "")
-                eligible, _ = is_eu_eligible(location, f"{item.get('workplaceType', '')} {description}")
-                relevant, _ = is_relevant(f"{title} {company['name']} {description}")
+                combined_desc = f"{item.get('workplaceType', '')} {description}"
+                eligible, _ = is_eu_eligible(location, combined_desc)
+                relevant, _ = is_relevant(f"{title} {company['name']} {combined_desc}")
                 if eligible and relevant:
                     compensation = item.get("compensation") or {}
                     salary = compensation.get("compensationTierSummary") or compensation.get("scrapeableCompensationSalarySummary") or ""
@@ -510,14 +567,14 @@ def scrape_adzuna() -> List[Dict]:
 
 def scrape_career_pages() -> List[Dict]:
     hints = []
-    all_keywords = sorted({kw for data in TRACK_KEYWORDS.values() for kw in data["keywords"]} | set(DOMAIN_KEYWORDS))
+    all_keywords = sorted({kw for kws in TARGET_KEYWORD_GROUPS.values() for kw in kws})
     for company in CAREER_PAGES:
         response = fetch(company["url"], timeout=15)
         if not response:
             continue
         text = response.text.lower()
         hits = [kw for kw in all_keywords if kw in text]
-        geo_hit = any(word in text for word in ["remote", "spain", "barcelona", "europe", "emea", "hybrid"])
+        geo_hit = any(word in text for word in ["remote", "spain", "barcelona", "europe", "emea", "hybrid", "relocation"])
         if hits and geo_hit:
             hints.append(normalize_job(
                 f"Relevant hiring signals at {company['name']}",
@@ -531,68 +588,63 @@ def scrape_career_pages() -> List[Dict]:
     return hints
 
 
-def cv_for_track(track: str) -> str:
-    if "C" in track:
-        return "MarcPlanas_CV_AIProductEngineer_EN.docx"
-    if "B" in track:
-        return "MarcPlanas_TrackB_BA_Transformation_EN.docx"
-    return "MarcPlanas_CV_English_Final_Updated.docx"
-
-
-def recommendation_for_score(score: int) -> str:
-    if score >= 80:
-        return "APPLY"
-    if score >= 65:
-        return "CONDITIONAL"
-    return "DISCARD"
-
-
 def deterministic_score(job: Dict) -> Dict:
-    text = f"{job['title']} {job['company']} {job['description']}".lower()
-    track, hits = classify_track(text)
-    domain_hits = keyword_hits(text, DOMAIN_KEYWORDS)
+    text = f"{job['title']} {job['company']} {job['location']} {job['salary']} {job['description']}".lower()
+    score = 30
+    reasons = []
 
-    score = 35
-    if "A" in track:
-        score += 30
-    if "B" in track:
-        score += 24
-    if "C" in track:
-        score += 22
-    if domain_hits:
-        score += 12
-    if any(platform in text for platform in ["guidewire", "policycenter", "claimcenter", "duck creek", "fineos"]):
-        score += 10
+    for group, bonus in [
+        ("insurance_ops", 24),
+        ("platforms", 22),
+        ("ba_transformation", 26),
+        ("ai_consulting", 18),
+        ("domain", 12),
+    ]:
+        hits = keyword_hits(text, TARGET_KEYWORD_GROUPS[group])
+        if hits:
+            score += bonus
+            reasons.append(f"{group}: {', '.join(hits[:3])}")
+
+    bonus_hits = []
+    for keyword, bonus in BONUS_KEYWORDS.items():
+        if keyword in text:
+            score += bonus
+            bonus_hits.append(keyword)
+    if bonus_hits:
+        reasons.append(f"priority bonus: {', '.join(bonus_hits[:3])}")
 
     eligible, loc_type = is_eu_eligible(job.get("location", ""), job.get("description", ""))
-    blockers = []
     if not eligible:
         score = 0
-        blockers.append("Location rejected or not EU eligible")
+        reasons.append(f"location rejected: {loc_type}")
+    elif loc_type in {"remote_eu_or_emea", "barcelona_hybrid_or_local"}:
+        score += 8
+        reasons.append(f"location: {loc_type}")
+    elif loc_type.startswith("eu_relocation_or_hybrid_ba"):
+        score += 5
+        reasons.append("location: EU relocation/hybrid acceptable for BA/consulting")
+
+    if is_pure_ai_engineering(text):
+        score -= 35
+        reasons.append("penalty: pure AI/LLM engineering without domain or consulting context")
+    elif has_any(text, PURE_AI_ENGINEERING_KEYWORDS) and has_any(text, CONSULTING_OR_DOMAIN_CONTEXT):
+        score -= 10
+        reasons.append("minor penalty: AI engineering title, but has domain/consulting context")
+
     if any(negative in text for negative in NEGATIVE_ROLE_KEYWORDS):
         score = 0
-        blockers.append("Junior/sales/research negative keyword")
+        reasons.append("junior/sales/research negative keyword")
 
-    score = min(score, 95)
-    reason_bits = []
-    if hits:
-        reason_bits.append(f"track hits: {', '.join(hits[:4])}")
-    if domain_hits:
-        reason_bits.append(f"domain hits: {', '.join(domain_hits[:4])}")
-    reason = "; ".join(reason_bits) or "Relevant keywords detected."
+    if explicit_salary_below_floor(text):
+        score = 0
+        reasons.append(f"explicit salary below €{MIN_SALARY_EUR:,} floor")
 
+    score = max(0, min(score, 98))
     return {
-        "track": track,
         "score": score,
-        "recommendation": recommendation_for_score(score),
-        "blockers": "; ".join(blockers) if blockers else "None",
-        "gaps_and_reframe": "Use insurance operations + BA + automation portfolio as the bridge." if score >= 65 else "Weak fit or missing domain/location signal.",
-        "reason": reason,
+        "reason": "; ".join(reasons[:4]) or "Relevant keywords detected.",
         "location_type": loc_type,
         "salary_info": job.get("salary") or "not specified",
-        "cv_to_use": cv_for_track(track),
-        "keywords_to_mirror": ", ".join((hits + domain_hits)[:5]),
-        "github_projects_to_mention": "claims-triage-langgraph; bordereaux-intake-n8n-mcp; insurance-ai-governance-pack",
     }
 
 
@@ -601,26 +653,23 @@ def score_job(job: Dict) -> Dict:
     if not ANTHROPIC_API_KEY:
         return fallback
 
-    prompt = f"""You are a precision career advisor for Marc Planas Callico.
+    prompt = f"""Score this job for Marc Planas from 0-100.
 
-Evaluate this job using three tracks:
-A — Insurance Ops / Guidewire / Claims / Underwriting / Reinsurance
-B — Business Analyst / Digital Transformation / Implementation Consultant
-C — AI Consultant / AI Automation / AI Product / Digital Workforce
+Marc target:
+- EU-wide insurance operations, Business Analyst, digital transformation, implementation consultant and AI automation consultant roles.
+- Accept: 100% remote EU/Europe/EMEA, remote global if EU-eligible, Barcelona hybrid, and European relocation/hybrid for strong BA/consulting roles.
+- Hard reject: Madrid presencial, US-only, junior/graduate/intern, pure sales, pure ML research.
+- Salary floor: explicit salary below EUR {MIN_SALARY_EUR} is a reject; missing salary is acceptable.
+- Strong bonus: Business Analyst, Transformation Consultant, Insurance Consultant, AI Automation Consultant, Guidewire Business Analyst/Consultant.
+- Penalize: pure AI Engineer / LLM Engineer roles unless they clearly involve consulting, operations, insurance, financial services, governance, implementation or workflow automation.
 
-Candidate: Barcelona, EU remote/hybrid Barcelona only. 10+ years insurance/reinsurance operations, Guidewire, claims/underwriting processes, delegated authority, bordereaux, stakeholder management, intermediate Python/SQL, Power BI, CrewAI, LangGraph, Claude API, n8n, MCP, EU AI Act/DORA governance portfolio.
-
-Hard reject: US-only, on-site outside Barcelona, junior/graduate/intern, pure sales, pure ML research, salary below 55k if explicit.
-
-Job:
-Title: {job['title']}
+Job title: {job['title']}
 Company: {job['company']}
 Location: {job['location']}
-Source: {job['source']}
-Description: {job['description'][:900]}
+Salary: {job.get('salary', '') or 'not specified'}
+Description: {job['description'][:1100]}
 
-Return only valid JSON with these keys:
-{{"track":"A|B|C|Mixed A+B|Mixed A+C|Mixed B+C|Unclear","score":0,"recommendation":"APPLY|CONDITIONAL|DISCARD","blockers":"None or text","gaps_and_reframe":"text","reason":"one sentence","location_type":"remote_eu|hybrid_barcelona|onsite|unclear","salary_info":"salary or not specified","cv_to_use":"exact CV filename","keywords_to_mirror":"comma-separated keywords","github_projects_to_mention":"1-3 projects"}}
+Return only JSON: {{"score": int, "reason": "one sentence", "location_type": "remote_eu|remote_emea|barcelona_hybrid|eu_relocation_ba_consulting|us_only|madrid_presencial|onsite_rejected|unclear", "salary_info": "salary or not specified"}}
 """
     try:
         response = requests.post(
@@ -632,10 +681,10 @@ Return only valid JSON with these keys:
             },
             json={
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 900,
+                "max_tokens": 350,
                 "messages": [{"role": "user", "content": prompt}],
             },
-            timeout=40,
+            timeout=30,
         )
         if response.status_code != 200:
             print(f"    Claude scoring skipped: HTTP {response.status_code}")
@@ -650,30 +699,26 @@ Return only valid JSON with these keys:
 
 
 def log_to_tracker(job: Dict, result: Dict) -> None:
-    exists = os.path.exists(TRACKER_FILE)
-    with open(TRACKER_FILE, "a", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        if not exists:
+    try:
+        exists = os.path.exists(TRACKER_FILE)
+        with open(TRACKER_FILE, "a", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            if not exists:
+                writer.writerow(["Date", "Title", "Company", "Source", "Score", "Location", "Salary", "Reason", "Link", "Status"])
             writer.writerow([
-                "Date", "Title", "Company", "Source", "Track", "Score", "Recommendation",
-                "Location", "Salary", "Blockers", "Reason", "CV_To_Use", "Link", "Status",
+                TODAY,
+                job.get("title", ""),
+                job.get("company", ""),
+                job.get("source", ""),
+                result.get("score", ""),
+                result.get("location_type", ""),
+                result.get("salary_info", ""),
+                result.get("reason", ""),
+                job.get("link", ""),
+                "New",
             ])
-        writer.writerow([
-            TODAY,
-            job.get("title", ""),
-            job.get("company", ""),
-            job.get("source", ""),
-            result.get("track", ""),
-            result.get("score", ""),
-            result.get("recommendation", ""),
-            result.get("location_type", ""),
-            result.get("salary_info", ""),
-            result.get("blockers", ""),
-            result.get("reason", ""),
-            result.get("cv_to_use", ""),
-            job.get("link", ""),
-            "New",
-        ])
+    except Exception as exc:
+        print(f"  tracker write error: {exc}")
 
 
 def send_email(matches: List[Dict], hints: List[Dict]) -> None:
@@ -685,7 +730,7 @@ def send_email(matches: List[Dict], hints: List[Dict]) -> None:
         return
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"🎯 {len(matches)} Job Match(es) — Track A/B/C — {TODAY}"
+    msg["Subject"] = f"🎯 {len(matches)} Job Match(es) — EU BA / Ops / AI Consulting — {TODAY}"
     msg["From"] = f"EU Job Monitor <{GMAIL_USER}>"
     msg["To"] = GMAIL_USER
 
@@ -694,31 +739,26 @@ def send_email(matches: List[Dict], hints: List[Dict]) -> None:
         result = job.get("ai_result", {})
         rows.append(
             f"<li><b><a href='{html.escape(job['link'])}'>{html.escape(job['title'])}</a></b> "
-            f"@ {html.escape(job['company'])} — {result.get('score', '?')}% · Track {html.escape(str(result.get('track', '?')))}<br>"
+            f"@ {html.escape(job['company'])} — {result.get('score', '?')}%<br>"
             f"<small>{html.escape(job.get('source', ''))} · {html.escape(job.get('location', ''))} · "
-            f"{html.escape(result.get('recommendation', ''))} · {html.escape(result.get('reason', ''))}<br>"
-            f"CV: {html.escape(result.get('cv_to_use', ''))} · Keywords: {html.escape(result.get('keywords_to_mirror', ''))}</small></li>"
+            f"{html.escape(result.get('location_type', ''))} · {html.escape(result.get('reason', ''))}</small></li>"
         )
-    hint_rows = [
-        f"<li><a href='{html.escape(h['link'])}'>{html.escape(h['company'])}</a> — {html.escape(h['description'])}</li>"
-        for h in hints
-    ]
+    hint_rows = [f"<li><a href='{html.escape(h['link'])}'>{html.escape(h['company'])}</a> — {html.escape(h['description'])}</li>" for h in hints]
 
     body = f"""
-    <html><body style="font-family: Arial, sans-serif; max-width: 780px;">
-      <h2>EU Insurance Remote Job Monitor — Triple Track</h2>
-      <p><b>Scope:</b> A Ops/Guidewire/Claims · B BA/Transformation · C AI Consultant/Automation.</p>
+    <html><body style="font-family: Arial, sans-serif; max-width: 760px;">
+      <h2>EU Insurance / BA / AI Consulting Job Monitor</h2>
+      <p><b>Scope:</b> insurance ops / Guidewire / claims / underwriting / reinsurance + BA / transformation + AI automation consulting.</p>
+      <p><b>Location policy:</b> remote EU/EMEA, Barcelona hybrid, and EU relocation/hybrid for strong BA/consulting roles. Madrid presencial and US-only are blocked.</p>
+      <p><b>Salary floor:</b> explicit salaries below €{MIN_SALARY_EUR:,} are rejected; missing salary is still considered.</p>
       <h3>Scored matches</h3>
       <ol>{''.join(rows) or '<li>No scored matches above threshold.</li>'}</ol>
       <h3>Career pages worth manual checking</h3>
       <ul>{''.join(hint_rows) or '<li>No manual-check signals.</li>'}</ul>
-      <p style="font-size:12px;color:#777;">{TODAY} · Minimum score {PROFILE.get('min_match_score', 70)}%</p>
+      <p style="font-size:12px;color:#777;">{TODAY} · Minimum score {PROFILE.get('min_match_score', 50)}%</p>
     </body></html>
     """
-    plain = "\n".join([
-        f"{j['title']} @ {j['company']} — {j.get('ai_result', {}).get('score', '?')}% — {j.get('link', '')}"
-        for j in matches
-    ])
+    plain = "\n".join([f"{j['title']} @ {j['company']} — {j.get('link', '')}" for j in matches])
     msg.attach(MIMEText(plain or "No scored matches above threshold.", "plain"))
     msg.attach(MIMEText(body, "html"))
 
@@ -732,10 +772,12 @@ def send_email(matches: List[Dict], hints: List[Dict]) -> None:
 
 
 def main() -> None:
-    print(f"\n{'=' * 76}")
-    print(f"  EU Insurance Remote Job Monitor v5 — {TODAY}")
-    print("  Track A: Ops/Guidewire/Claims · Track B: BA/Transformation · Track C: AI Consultant")
-    print(f"{'=' * 76}\n")
+    print(f"\n{'=' * 78}")
+    print(f"  EU Insurance Remote Job Monitor v5.1 — {TODAY}")
+    print("  Scope: Ops/Guidewire + BA/Transformation/Consulting + AI Automation Consultant")
+    print("  Location: Remote EU/EMEA + Barcelona hybrid + EU relocation for strong BA/consulting")
+    print(f"  Salary floor: €{MIN_SALARY_EUR:,} explicit minimum")
+    print(f"{'=' * 78}\n")
 
     seen = load_seen()
     all_jobs: List[Dict] = []
@@ -759,13 +801,13 @@ def main() -> None:
     print(f"📋 Career page hints: {len(hints)}")
 
     matches = []
-    threshold = int(PROFILE.get("min_match_score", 70))
+    threshold = int(PROFILE.get("min_match_score", 50))
     for job in deduped:
         result = score_job(job)
         job["ai_result"] = result
         score = int(result.get("score", 0))
-        emoji = "🎯" if score >= 85 else "✅" if score >= threshold else "➖"
-        print(f"  {emoji} {score:3d}% — Track {result.get('track', '?')} — {job['title']} @ {job['company']} [{job['source']}]")
+        emoji = "🎯" if score >= 85 else "✅" if score >= 70 else "👀" if score >= threshold else "➖"
+        print(f"  {emoji} {score:3d}% — {job['title']} @ {job['company']} [{job['source']}] — {result.get('location_type', '')}")
         if score >= threshold:
             log_to_tracker(job, result)
             matches.append(job)
