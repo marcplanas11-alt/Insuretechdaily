@@ -1,14 +1,14 @@
 """
 Marc Planas — Professional Profile for Job Hunter
-Reflects actual CV: Operations Data Manager at Accelerant, 10+ years (re)insurance ops.
-Used by job_hunter.py to score and match job listings, and generate tailored CVs.
+Reflects current target: EU-wide insurance operations, BA/digital transformation and AI consulting roles.
+Used by job_hunter.py to score and match job listings.
 """
 
 PROFILE = {
     "name": "Marc Planas Callico",
     "email": "marcplanas11@gmail.com",
     "phone": "+34 672 329 911",
-    "linkedin": "linkedin.com/in/intlinsure",
+    "linkedin": "linkedin.com/in/marcplanas11",
     "location": "Barcelona, Spain",
 
     # ── Languages ────────────────────────────────────────────────
@@ -16,69 +16,88 @@ PROFILE = {
         {"lang": "English",  "level": "C2"},
         {"lang": "French",   "level": "C1"},
         {"lang": "Spanish",  "level": "Native"},
-        {"lang": "Italian",  "level": "B2"},
         {"lang": "Catalan",  "level": "Native"},
+        {"lang": "Italian",  "level": "B2"},
     ],
 
     # ── Location & Work Preferences ──────────────────────────────
     "location_preferences": {
         "remote_eu": True,
+        "remote_global_if_eu_eligible": True,
         "hybrid_barcelona": True,
         "hybrid_madrid": False,
-        "hybrid_other": False,
+        "madrid_presencial": False,
+        "eu_relocation_for_ba_consulting": True,
+        "eu_relocation_for_ai_consulting": True,
+        "hybrid_other_eu_for_strong_ba_roles": True,
         "onsite_only": False,
         "outside_eu": False,
+        "notes": (
+            "Primary preference is 100% remote EU/EMEA. Barcelona hybrid is acceptable. "
+            "EU relocation or hybrid in another European hub is acceptable for strong BA, "
+            "digital transformation or AI consulting roles. Madrid presencial remains a hard blocker."
+        ),
     },
 
     # ── Salary ───────────────────────────────────────────────────
-    "min_salary_eur": 60000,
-    "target_salary_eur": 75000,
-    "salary_note": "Floor €60K, senior target €75K+. Roles without salary info still considered.",
+    "min_salary_eur": 45000,
+    "target_salary_eur": 55000,
+    "stretch_salary_eur": 70000,
+    "salary_note": (
+        "Floor €45K. Target €55K–€70K depending on role, location, remote policy and consulting/insurance fit. "
+        "Roles without salary information are still considered."
+    ),
 
     # ── Target Roles ─────────────────────────────────────────────
     "target_roles": [
-        # Traditional Operations (Core)
+        # Track A — insurance operations / platforms
         "Operations Manager",
         "Insurance Operations Manager",
+        "Insurance Operations Analyst",
         "Underwriting Operations Specialist",
         "Underwriting Operations Manager",
-        "Insurance Operations Analyst",
-        "Head of Operations",
+        "Claims Operations Analyst",
+        "Claims Transformation Analyst",
         "Reinsurance Operations",
         "Programme Operations",
         "BPO Manager",
         "Process Excellence Manager",
         "Data Operations Manager",
-        # Business Analysis (InsurTech/FinTech/AI context)
+        "Guidewire Business Analyst",
+        "Guidewire Consultant",
+        "PolicyCenter / ClaimCenter Business Analyst",
+        # Track B — BA / transformation / consulting
         "Business Analyst",
+        "Senior Business Analyst",
+        "IT Business Analyst",
+        "Technical Business Analyst",
+        "Business Analyst (Insurance)",
         "Business Analyst (InsurTech)",
         "Business Analyst (FinTech)",
         "AI Business Analyst",
         "Digital Transformation Business Analyst",
+        "Digital Transformation Consultant",
         "Process Analyst",
-        "Operational Business Analyst",
-        # AI Product & Engineering (Expanded Scope)
-        "AI Product Engineer",
-        "AI Implementation Specialist",
+        "Business Process Analyst",
+        "Implementation Consultant",
+        "Functional Consultant",
+        "Solution Consultant",
+        "Product Owner",
+        # Track C — AI consulting / automation
+        "AI Consultant",
+        "AI Automation Consultant",
+        "AI Implementation Consultant",
+        "Intelligent Automation Consultant",
+        "AI Governance Consultant",
+        "Responsible AI Consultant",
         "Digital Workforce Specialist",
         "AI Operations Specialist",
         "AI-powered Operations Manager",
-        "AI/ML Operations Engineer",
-        "Automation Engineer (Finance/Insurance)",
-        # AI Engineering
-        "AI Engineer",
-        "AI Software Engineer",
-        "AI Solutions Engineer",
-        "Machine Learning Engineer (Finance/Insurance)",
-        "Conversational AI Engineer",
-        "AI Platform Engineer",
-        "LLM Engineer",
-        "Generative AI Engineer",
+        "Automation Consultant (Finance/Insurance)",
     ],
 
     # ── Target Company Types ─────────────────────────────────────
     "target_company_types": [
-        # Traditional Insurance
         "Insurance company",
         "Reinsurance company",
         "Insurtech",
@@ -88,24 +107,16 @@ PROFILE = {
         "Insurance broker",
         "Reinsurance broker",
         "Insurance platform / SaaS",
-        # New: AI-Focused & Scale-ups (expanded scope)
+        "Guidewire / Duck Creek / FINEOS consulting partner",
         "AI-powered InsurTech",
-        "AI/ML startup (Finance/Insurance focus)",
         "FinTech with insurance module",
         "AI automation/workflow platform",
         "AI agent orchestration platform",
         "AI governance / compliance platform",
-        "Scale-up (AI + domain expertise)",
-        # Pure AI companies (EU-based, remote)
-        "AI model company",
-        "LLM platform",
-        "AI infrastructure",
-        "AI tools / frameworks",
-        "AI consulting / advisory",
-        # Digital transformation & consulting
         "Digital transformation consultancy",
         "Business transformation firm",
-        "IT transformation",
+        "Financial services consulting practice",
+        "Insurance advisory practice",
     ],
 
     # ── Domain Experience ─────────────────────────────────────────
@@ -114,14 +125,12 @@ PROFILE = {
         "operational processes in MGA, broker and programme environments. Proven track record "
         "managing BPO supplier relationships, drafting SOPs, monitoring KPIs/KRIs/SLAs, and "
         "acting as primary operational point of contact for managing agents and external partners. "
-        "Now building AI agents and automation tooling (Claude API, LangGraph, CrewAI) to automate "
-        "the same complex workflows managed manually for a decade. Digital transformation practitioner: "
-        "BPMN process design, gap analysis, requirements definition, stakeholder alignment across "
-        "operations and IT. AI governance specialist: EU AI Act + DORA Art. 28 compliance tooling, "
-        "risk assessment, third-party vendor onboarding. Certified in Anthropic AI stack (Prompt "
-        "Engineering, RAG, Tool Use, Agents, MCP). Experienced in designing processes from scratch "
-        "in start-up and scale-up environments. Open to senior BA, AI governance, digital transformation, "
-        "and AI-enabled operations roles across EU."
+        "Targeting EU-wide remote, Barcelona hybrid, and selected European relocation roles in "
+        "insurance operations, Business Analysis, digital transformation, Guidewire/platform change, "
+        "AI automation consulting and AI governance. Digital transformation practitioner: BPMN process "
+        "design, gap analysis, requirements definition, stakeholder alignment across operations and IT. "
+        "AI governance exposure: EU AI Act + DORA Art. 28 compliance tooling, risk assessment and "
+        "third-party vendor onboarding."
     ),
 
     "core_competencies": {
@@ -134,6 +143,16 @@ PROFILE = {
             "Account clearance & set-up",
             "Process automation identification",
             "Workflow optimization",
+        ],
+        "business_analysis_transformation": [
+            "Requirements definition",
+            "Process mapping",
+            "Gap analysis",
+            "BPMN process design",
+            "Stakeholder management",
+            "UAT coordination",
+            "Operating model implementation",
+            "Digital transformation support",
         ],
         "bpo_supplier_management": [
             "BPO oversight",
@@ -152,7 +171,8 @@ PROFILE = {
             "Solvency II",
             "IFRS 17",
             "Sanctions screening (OFAC, HM Treasury, SDN)",
-            "Good Local Standards",
+            "DORA Art. 28 vendor governance",
+            "EU AI Act governance concepts",
             "Regulatory frameworks",
         ],
         "data_technology": [
@@ -160,20 +180,20 @@ PROFILE = {
             "Python (intermediate)",
             "Power BI",
             "Snowflake",
-            "AI tools (ChatGPT, Claude, Copilot)",
+            "Guidewire",
             "Jira",
             "UAT",
             "MS Office & Google Workspace",
         ],
         "ai_automation_stack": [
             "Claude API & Claude.ai",
-            "Prompt engineering (CoT, few-shot, XML structuring)",
-            "RAG (Retrieval Augmented Generation) concepts",
-            "LangChain / LangGraph workflow orchestration",
-            "AI agent design & deployment",
-            "GitHub Actions automation",
+            "Prompt engineering",
+            "RAG concepts",
+            "LangGraph workflow orchestration",
             "CrewAI system design",
             "MCP (Model Context Protocol)",
+            "n8n workflow automation",
+            "GitHub Actions automation",
         ],
         "domain_expertise_translation": [
             "10+ years Finance/Insurance ops knowledge",
@@ -193,11 +213,11 @@ PROFILE = {
             "period": "2025–Present",
             "location": "Barcelona / Remote",
             "highlights": [
-                "Own end-to-end ops for 20+ managing agent partners across EU and US",
+                "Own end-to-end ops for managing agent partners across UK and Europe",
                 "BPO supplier trainer and referral point, SLA monitoring",
-                "SOP drafting and standardisation across all platform processes",
+                "SOP drafting and standardisation across platform processes",
                 "KPI/KRI/SLA monitoring for internal and external performance",
-                "Tech supplier collaboration (Intrali): UAT lead, deliverable sign-off",
+                "Tech supplier collaboration: UAT lead, deliverable sign-off",
                 "SQL, Power BI, Snowflake for business cases; AI tools for efficiency",
             ],
         },
@@ -208,8 +228,9 @@ PROFILE = {
             "period": "2024–2025",
             "location": "Barcelona / Paris",
             "highlights": [
-                "French market ops end-to-end, primary contact for French-speaking partners",
-                "Process documentation, regulatory compliance across French book",
+                "French market operations coordination",
+                "Primary contact for French-speaking partners",
+                "Process documentation and regulatory compliance across French book",
             ],
         },
         {
@@ -220,7 +241,7 @@ PROFILE = {
             "location": "Barcelona",
             "highlights": [
                 "Governance for 30+ international Commercial Lines programmes",
-                "Authority compliance, SLA performance, documentation standards",
+                "Authority compliance, SLA performance and documentation standards",
                 "Training on complex, non-standard scenarios",
             ],
         },
@@ -231,9 +252,9 @@ PROFILE = {
             "period": "2021–2023",
             "location": "Barcelona",
             "highlights": [
-                "Designed processes from scratch for 17 international programmes",
-                "SOPs, governance, compliance controls (OFAC, HM Treasury, SDN)",
-                "Primary interface: fronting insurers, reinsurers, managing agents, regulators",
+                "Coordinated 17 international programmes",
+                "SOPs, governance and compliance controls (OFAC, HM Treasury, SDN)",
+                "Primary interface: fronting insurers, reinsurers, managing agents and regulators",
             ],
         },
         {
@@ -242,7 +263,7 @@ PROFILE = {
             "type": "Broker",
             "period": "2019–2021",
             "location": "Barcelona",
-            "highlights": ["End-to-end ops for corporate client portfolio"],
+            "highlights": ["End-to-end operations for corporate client portfolio"],
         },
         {
             "title": "Technical Operations — Non-Life",
@@ -264,81 +285,56 @@ PROFILE = {
 
     "education": [
         {"title": "Corredor de Seguros Grupo B", "institution": "ICEA", "year": "2022"},
-        {"title": "PSM I — Professional Scrum Master", "institution": "Scrum.org", "year": "In Progress"},
-        {"title": "Agile Project Management", "institution": "Google / Coursera", "year": "In Progress"},
+        {"title": "3 years Dentistry", "institution": "Universidad Europea de Madrid", "year": ""},
     ],
 
     # ── Scoring Keywords ─────────────────────────────────────────
     "keywords_high_priority": [
-        # Traditional insurance operations
-        "insurance operations", "underwriting operations", "reinsurance operations",
-        "MGA", "managing general agent", "delegated underwriting", "DUA",
-        "Lloyd's", "coverholder", "programme", "program",
-        "BPO", "SOP", "KPI", "SLA", "process improvement",
-        "Solvency II", "sanctions", "OFAC", "compliance",
-        "operations manager", "operations specialist", "operations analyst",
-        "insurtech", "insurance platform",
-        # Business Analysis
-        "business analyst", "business analysis", "process analyst",
-        "digital transformation", "operational analyst",
-        # New: AI & automation focus
-        "AI product engineer", "AI implementation", "digital workforce",
-        "AI automation", "workflow automation", "process automation",
-        "Claude API", "LLM", "large language model", "generative AI",
-        "LangChain", "LangGraph", "agent", "orchestration",
-        "prompt engineering", "RAG", "retrieval augmented",
-        "AI-powered", "AI-enabled", "automated workflow",
-        "finance operations AI", "insurance automation", "claims automation",
-        "MCP", "CrewAI", "automation engineer",
-        # AI Engineering
-        "AI engineer", "AI software engineer", "machine learning engineer",
-        "AI solutions engineer", "LLM engineer", "generative AI engineer",
-        "conversational AI", "AI platform engineer", "AI developer",
+        "insurance operations", "underwriting operations", "claims operations", "claims transformation",
+        "reinsurance operations", "MGA", "managing general agent", "delegated underwriting", "DUA",
+        "Lloyd's", "coverholder", "programme", "program", "bordereaux",
+        "Guidewire", "PolicyCenter", "ClaimCenter", "Duck Creek", "FINEOS",
+        "BPO", "SOP", "KPI", "SLA", "process improvement", "Solvency II", "DORA",
+        "business analyst", "business analysis", "process analyst", "requirements", "BPMN",
+        "digital transformation", "implementation consultant", "functional consultant", "product owner",
+        "AI consultant", "AI automation", "AI implementation", "intelligent automation",
+        "workflow automation", "process automation", "AI governance", "responsible AI", "EU AI Act",
+        "Claude API", "LLM", "generative AI", "LangGraph", "CrewAI", "MCP", "n8n",
     ],
 
     "keywords_medium_priority": [
-        "insurance", "reinsurance", "broker", "underwriting",
+        "insurance", "reinsurance", "broker", "underwriting", "claims", "fintech",
         "data operations", "process excellence", "operational excellence",
-        "remote", "EU", "Europe", "Barcelona", "Spain",
-        "SQL", "Power BI", "Snowflake", "Python",
-        "agile", "scrum", "continuous improvement",
-        "AI", "machine learning", "automation", "workflow",
-        "API", "integration", "data pipeline", "backend",
-        "GitHub Actions", "CI/CD", "automation platform",
-        "fintech", "finance automation", "treasury operations",
+        "remote", "EU", "Europe", "EMEA", "Barcelona", "Spain", "relocation",
+        "SQL", "Power BI", "Snowflake", "Python", "Jira", "agile", "continuous improvement",
+        "AI", "automation", "workflow", "API", "integration", "data pipeline", "GitHub Actions",
     ],
 
     "keywords_exclude": [
         "junior", "graduate", "intern", "entry level", "apprentice",
+        "sales development representative", "sdr", "account executive", "pure sales",
         "pure software engineer", "pure frontend", "pure backend", "pure devops",
-        "data scientist (pure ML)", "research scientist",
-        "actuary", "actuarial", "pricing analyst",
-        "sales agent", "insurance agent", "life insurance agent",
-        "claims adjuster", "field adjuster",
+        "data scientist (pure ML)", "research scientist", "actuary", "actuarial",
+        "insurance agent", "life insurance agent", "field adjuster",
     ],
 
     "min_match_score": 50,
 
     # ── CV Summaries for AI generation ───────────────────────────
     "cv_summary_en": (
-        "Insurance operations professional with 10+ years building complex workflows in MGA, "
-        "reinsurance and broker environments. Now architect AI agents and automation systems "
-        "(Claude API, LangGraph, CrewAI) to automate the same processes managed manually for "
-        "a decade—translating operational domain expertise into production AI systems. Certified "
-        "in Anthropic AI stack; fluent in prompt engineering, RAG, agents and MCP. Deep "
-        "understanding of Solvency II, sanctions screening (OFAC), regulatory compliance and "
-        "operational controls. Bilingual English (C2) / Spanish (native), plus French (C1) "
-        "and Italian (B2)."
+        "Insurance and reinsurance operations professional with 10+ years across MGA, broker, carrier "
+        "and programme environments. Combines senior insurance operations experience with Business "
+        "Analysis, digital transformation and AI-enabled automation skills, including process mapping, "
+        "requirements definition, UAT, Guidewire exposure, SQL, Power BI, Claude API, LangGraph, CrewAI, "
+        "MCP and n8n. Targeting EU-wide remote, Barcelona hybrid and selected European relocation roles "
+        "in insurance operations, BA/consulting and AI automation."
     ),
 
     "cv_summary_es": (
-        "Profesional de operaciones de seguros con 10+ años diseñando procesos complejos en "
-        "entornos MGA, reaseguros y corredores. Ahora construyo agentes AI y sistemas de "
-        "automatización (Claude API, LangGraph, CrewAI) para automatizar los mismos procesos "
-        "gestionados manualmente durante una década—traduciendo expertise de dominio en "
-        "sistemas AI en producción. Certificado en stack Anthropic; experto en prompt "
-        "engineering, RAG, agentes y MCP. Conocimiento profundo de Solvencia II, screening "
-        "de sanciones, cumplimiento normativo y controles operacionales. Bilingüe inglés "
-        "(C2) / español (nativo), más francés (C1) e italiano (B2)."
+        "Profesional de operaciones de seguros y reaseguros con 10+ años en entornos MGA, corredores, "
+        "aseguradoras y programas internacionales. Combina experiencia senior en operaciones de seguros "
+        "con Business Analysis, transformación digital y automatización con IA: process mapping, requisitos, "
+        "UAT, Guidewire, SQL, Power BI, Claude API, LangGraph, CrewAI, MCP y n8n. Busca roles remotos en "
+        "Europa, híbridos en Barcelona o relocación europea selectiva para BA/consulting y AI automation."
     ),
 }
