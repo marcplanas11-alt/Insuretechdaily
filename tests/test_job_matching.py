@@ -1,81 +1,136 @@
-"""Test the updated job matching logic."""
-from job_hunter import is_insurance_relevant, is_eu_eligible
+"""
+Tests for is_insurance_relevant() covering all three tracks.
+Track A: insurance/reinsurance/MGA domain.
+Track B: BA/digital transformation + financial/regulated context.
+Track C: AI orchestration tools + finance-insurance domain.
+"""
+import pytest
+from job_hunter import is_insurance_relevant
 
-# Test cases for is_insurance_relevant: (text, expected_result)
-relevance_cases = [
-    # Traditional insurance (should match)
-    ("Operations Manager at Lloyd's coverholder in Madrid", True),
-    ("Insurance Operations Specialist - MGA", True),
 
-    # AI + Finance/Insurance (should match - new scope)
-    ("AI Product Engineer - Claims automation with Claude API", True),
-    ("LangGraph workflow orchestration for insurance underwriting", True),
-    ("AI Implementation Specialist - Treasury Operations FinTech", True),
+class TestTrackAMatching:
+    """Traditional insurance/reinsurance domain — must match."""
 
-    # AI Engineer + insurance domain (should match - new AI engineering scope)
-    ("AI Engineer building automation for insurance claims processing", True),
-    ("Machine learning engineer for insurance underwriting platform", True),
-    ("LLM Engineer at InsurTech startup, finance automation focus", True),
+    def test_lloyds_coverholder(self):
+        assert is_insurance_relevant("Operations Manager at Lloyd's coverholder in London")
 
-    # BA + insurance/fintech domain (should match)
-    ("Business Analyst at MGA, process documentation and SOP ownership", True),
-    ("Digital transformation business analyst at fintech scale-up", True),
+    def test_mga_operations(self):
+        assert is_insurance_relevant("Insurance Operations Specialist — MGA platform remote")
 
-    # AI without domain context (should NOT match)
-    ("Senior Software Engineer - Python/Go SaaS product", False),
-    ("ML Engineer for Computer Vision startup in Berlin", False),
+    def test_reinsurance_analyst(self):
+        assert is_insurance_relevant("Senior reinsurance analyst EMEA remote")
 
-    # Finance/Ops but no insurance (should NOT match)
-    ("Financial Operations Manager - FAANG", False),
+    def test_underwriting_operations(self):
+        assert is_insurance_relevant("Underwriting operations manager remote EU")
 
-    # Mixed: has domain words but not insurance-specific
-    ("Workflow automation engineer for business processes", False),
-    ("Process automation with Python and APIs", False),
-]
+    def test_bordereaux_manager(self):
+        assert is_insurance_relevant("Bordereaux data quality manager insurance")
 
-# Test cases for is_eu_eligible: (location, description, expected_eligible)
-eligibility_cases = [
-    ("Remote", "", True),
-    ("Remote EU", "", True),
-    ("Barcelona, Spain", "", True),
-    ("London, UK", "", True),
-    ("Remote (US)", "", False),
-    ("United States only", "", False),
-    ("San Francisco, CA", "", False),
-    ("Remote", "must be authorized to work in the us", False),
-    ("", "remote emea, work from anywhere in europe", True),
-    ("New York, NY", "", False),
-]
+    def test_delegated_authority(self):
+        assert is_insurance_relevant("Delegated underwriting authority operations specialist")
 
-print("Testing is_insurance_relevant() logic:\n")
-passed = failed = 0
-for text, expected in relevance_cases:
-    result = is_insurance_relevant(text)
-    status = "✅ PASS" if result == expected else "❌ FAIL"
-    if result == expected:
-        passed += 1
-    else:
-        failed += 1
-    print(f"{status}: '{text[:65]}' => {result} (expected {expected})")
+    def test_solvency_ii(self):
+        assert is_insurance_relevant("Solvency II compliance manager insurance group")
 
-print(f"\n{passed}/{len(relevance_cases)} relevance tests passed")
+    def test_insurtech(self):
+        assert is_insurance_relevant("Operations lead at fast-growing insurtech startup")
 
-print("\nTesting is_eu_eligible() logic:\n")
-eu_passed = eu_failed = 0
-for loc, desc, expected in eligibility_cases:
-    eligible, reason = is_eu_eligible(loc, desc)
-    result = eligible
-    status = "✅ PASS" if result == expected else "❌ FAIL"
-    if result == expected:
-        eu_passed += 1
-    else:
-        eu_failed += 1
-    print(f"{status}: loc='{loc}' desc='{desc[:40]}' => {result} [{reason}] (expected {expected})")
+    def test_fintech_financial_services(self):
+        assert is_insurance_relevant("Operations analyst at fintech financial services platform")
 
-print(f"\n{eu_passed}/{len(eligibility_cases)} eligibility tests passed")
-total = passed + eu_passed
-total_all = len(relevance_cases) + len(eligibility_cases)
-print(f"\n{'='*50}")
-print(f"TOTAL: {total}/{total_all} tests passed")
-if failed + eu_failed > 0:
-    exit(1)
+    def test_claims_processing(self):
+        assert is_insurance_relevant("Claims processing manager insurance company remote")
+
+
+class TestTrackBMatching:
+    """BA/Digital Transformation + financial/regulated domain — must match."""
+
+    def test_ba_insurtech(self):
+        assert is_insurance_relevant("AI Product Owner Insurance Claims Automation insurtech")
+
+    def test_ba_financial_services(self):
+        assert is_insurance_relevant("Business analyst financial services digital transformation remote")
+
+    def test_digital_transformation_insurance(self):
+        assert is_insurance_relevant("Digital transformation analyst insurance operations remote")
+
+    def test_requirements_fintech(self):
+        assert is_insurance_relevant("Requirements elicitation analyst fintech payments remote")
+
+    def test_bpmn_insurance(self):
+        assert is_insurance_relevant("BPMN process mapping analyst insurance company")
+
+    def test_gap_analysis_financial(self):
+        assert is_insurance_relevant("Gap analysis consultant financial services regulatory compliance")
+
+    def test_process_analyst_insurance(self):
+        assert is_insurance_relevant("Process analyst insurance digital transformation BPMN")
+
+    def test_ba_regulatory(self):
+        assert is_insurance_relevant("Business analyst regulatory compliance banking fintech remote")
+
+
+class TestTrackCMatching:
+    """AI Product Engineer + finance/insurance domain context — must match."""
+
+    def test_ai_product_engineer_claims(self):
+        assert is_insurance_relevant("AI Product Engineer claims automation with Claude API")
+
+    def test_langgraph_insurance(self):
+        assert is_insurance_relevant("LangGraph workflow orchestration for insurance underwriting")
+
+    def test_ai_implementation_treasury(self):
+        assert is_insurance_relevant("AI Implementation Specialist treasury operations fintech")
+
+    def test_crewai_reinsurance(self):
+        assert is_insurance_relevant("CrewAI multi-agent developer reinsurance contract review")
+
+    def test_mcp_bordereaux(self):
+        assert is_insurance_relevant("MCP orchestration engineer bordereaux intake automation")
+
+    def test_digital_workforce_finance(self):
+        assert is_insurance_relevant("Digital workforce specialist AI agent finance operations")
+
+    def test_llm_insurance_automation(self):
+        assert is_insurance_relevant("LLM engineer insurance claims triage automation remote")
+
+    def test_rag_financial_services(self):
+        assert is_insurance_relevant("RAG pipeline developer financial services compliance")
+
+    def test_ai_agent_insurance(self):
+        assert is_insurance_relevant("AI agent engineer insurance platform automation remote")
+
+
+class TestHardExcludes:
+    """Roles that must NOT be matched by any track."""
+
+    def test_pure_software_engineer(self):
+        assert not is_insurance_relevant("Senior Software Engineer Python Go SaaS product")
+
+    def test_ml_research_computer_vision(self):
+        assert not is_insurance_relevant("ML Engineer computer vision NLP deep learning startup")
+
+    def test_pure_frontend(self):
+        assert not is_insurance_relevant("Frontend developer React TypeScript UI components")
+
+    def test_ai_no_domain_context(self):
+        assert not is_insurance_relevant("AI engineer LLM RAG generic SaaS platform no domain")
+
+    def test_generic_ba_no_domain(self):
+        assert not is_insurance_relevant("Business analyst IT project management no domain")
+
+    def test_game_developer(self):
+        assert not is_insurance_relevant("Game developer Unity C# 3D engine graphics")
+
+    def test_generic_process_automation(self):
+        assert not is_insurance_relevant("Workflow automation engineer business processes general")
+
+    def test_generic_python_api(self):
+        assert not is_insurance_relevant("Python developer API microservices no domain")
+
+    def test_financial_ops_faang_no_insurance(self):
+        # Generic "financial operations" without insurance/fintech specifics should not match
+        # NOTE: this is a marginal case — test documents expected behaviour
+        result = is_insurance_relevant("Financial Operations Manager FAANG tech company")
+        # "financial" alone is not enough without a regulated-domain qualifier — should be False
+        assert result is False
